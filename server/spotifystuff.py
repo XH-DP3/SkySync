@@ -4,6 +4,7 @@ from spotipy.oauth2 import SpotifyOAuth
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()  # Load variables from .env into environment
 
 client_id = os.getenv('SPOTIFY_CLIENT_ID')
@@ -16,35 +17,38 @@ sp = spotipy.Spotify(auth_manager=auth_manager)
 
 playlist_id = '7zsSWNoB46Ct4RHXv3M5vh'  # example Spotify playlist URI or ID
 
-all_tracks = []
-limit = 100  # max allowed by Spotify API
-offset = 0
 
-while True:
-    response = sp.playlist_items(playlist_id, limit=limit, offset=offset)
-    tracks = response['items']
-    all_tracks.extend(tracks)
-    
-    if len(tracks) < limit:
-        # Fetched all tracks
-        break
-    offset += limit
 
-print(f"Total tracks fetched: {len(all_tracks)}")
+def get_all_track_ids():
+    all_tracks = []
+    limit = 100  # max allowed by Spotify API
+    offset = 0
 
-# Example: print track names and artists
-for item in all_tracks:
-    track = item['track']
-    print(f"{track['name']} by {', '.join(artist['name'] for artist in track['artists'])}")
+    while True:
+        response = sp.playlist_items(playlist_id, limit=limit, offset=offset)
+        tracks = response['items']
+        all_tracks.extend(tracks)
+        
+        if len(tracks) < limit:
+            # Fetched all tracks
+            break
+        offset += limit
 
-# Assuming all_tracks is your full list of 700 track items
+    print(f"Total tracks fetched: {len(all_tracks)}")
 
-first_50_tracks = all_tracks[-50:]  # get first 50 items
+    # Example: print track names and artists
+    """for item in all_tracks:
+        track = item['track']
+        print(f"{track['name']} by {', '.join(artist['name'] for artist in track['artists'])}")"""
 
-# Extract track IDs from first 50 tracks
-track_ids = [item['track']['id'] for item in first_50_tracks if item['track'] and item['track']['id']]
+    # Assuming all_tracks is your full list of 700 track items
 
-print(track_ids)
+    #first_50_tracks = all_tracks[-50:]  # get first 50 items
+
+    # Extract track IDs from first 50 tracks
+    return [item['track']['id'] for item in all_tracks if item['track'] and item['track']['id']]
+
+print(get_all_track_ids())
 
 
 

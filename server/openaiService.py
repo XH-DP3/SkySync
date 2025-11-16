@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
 
- 
 
 
 def getSongParams(weather_data):
