@@ -24,6 +24,7 @@ wheels/
 *.egg
 .cache.sqlite
 .cache
+token_playback.cache
 
 # IDE
 .vscode/
