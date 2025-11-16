@@ -204,3 +204,60 @@ body, html, #root {
     background: #f0f0f0;
     transform: translateY(-2px);
   }
+
+  .spotify-generate-btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .spotify-generate-btn.loading::after {
+    content: " ⏳";
+    animation: spin 1.2s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spotify-generate-btn.loading::after {
+    content: " ⏳";
+    animation: spin 1.2s linear infinite;
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spotify-generate-btn.loading {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+  
+  .spotify-generate-btn.loading::after {
+    animation: pulse 1.5s infinite ease-in-out;
+  }
+  
+  @keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+  }
+
+  .loading-text {
+    margin-top: 10px;
+    font-size: 16px;
+    color: white;       /* make visible */
+    opacity: 0.9;
+    text-align: center;
+  }
+
+  .playlist-bubble .bubble-title {
+    font-size: 42px;        /* SAME SIZE AS 'Current Weather' */
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: white;
+    text-align: left;
+  }
+  

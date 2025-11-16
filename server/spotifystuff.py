@@ -19,11 +19,7 @@ auth_manager = SpotifyOAuth(client_id=client_id,
                             cache_path=".cache")
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
-<<<<<<< HEAD
 playlist_id = '0JiVp7Z0pYKI8diUV6HJyQ'  # example Spotify playlist URI or ID
-=======
-playlist_id = '7zsSWNoB46Ct4RHXv3M5vh'  # example Spotify playlist URI or ID
->>>>>>> 7c91ccb9c703f0dae147ec6749afbc0a6812bc78
 
 
 

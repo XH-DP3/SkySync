@@ -44,6 +44,12 @@ function App() {
   const [spotifyLink, setSpotifyLink] = useState("");
   const [playlistGenerated, setPlaylistGenerated] = useState(false);
   const [playlistTitle, setPlaylistTitle] = useState("");
+  const [playlistDescription, setPlaylistDescription] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+
+
 
   // MAIN PAGE BACKGROUND
   if (!weather) {
@@ -64,20 +70,26 @@ function App() {
   // ======= GENERATE PLAYLIST (backend call) =======
   async function generatePlaylist() {
     try {
+      setLoading(true);
+  
       const res = await fetch("/api/makeplaylistcurrentweather");
       const data = await res.json();
   
-      console.log("Playlist generated:", data);
+      if (data.status === "playlist made") {
+        setPlaylistTitle(data.title);
+        setPlaylistDescription(data.description);   // <-- NEW
+        setPlaylistGenerated(true);
+      }
   
-      // save title from backend
-      setPlaylistTitle(data.title);
-  
-      setPlaylistGenerated(true);  // reveal the right bubble
     } catch (err) {
       console.error("Playlist error:", err);
       alert("Error generating playlist.");
+    } finally {
+      setLoading(false);
     }
   }
+  
+  
   
 
   return (
@@ -114,32 +126,57 @@ function App() {
           {playlistGenerated && (
   <div className="playlist-bubble">
 
-    {/* BIG TITLE (same size as Current Weather) */}
-    <h1 className="bubble-title">Title: {playlistTitle}</h1>
+    {/* 🌟 Playlist Title (big, centered, same style as Current Weather) */}
+    <h1 className="bubble-title playlist-main-title">
+      {playlistTitle}
+    </h1>
 
-    {/* Subtitle */}
-    <h2 className="playlist-ready-subtitle">Playlist Ready</h2>
+    {/* 🌤️ Playlist Description (new line & spaced) */}
+    {playlistDescription && (
+      <div className="playlist-description">
+        <p className="description-text">
+          {playlistDescription}
+        </p>
+      </div>
+    )}
 
-    <p>Your personalized playlist is generated!</p>
+    <p className="ready-text">Your personalized playlist is ready!</p>
 
     <button className="spotify-open-btn">
       Open Playlist
     </button>
+
   </div>
 )}
+
+
 
 
         </div>
       )}
 
       {/* SPOTIFY INPUT BELOW WEATHER (before playlist appears) */}
+     
       {weather && !playlistGenerated && (
-  <div className="generate-section">
-    <button className="generate-weather-btn" onClick={generatePlaylist}>
-      🎵 Generate Playlist Based on Weather
+  <div className="spotify-section">
+
+    <button
+      className="spotify-generate-btn"
+      onClick={generatePlaylist}
+      disabled={loading}
+    >
+      {loading ? "⏳ Generating Playlist…" : "🎵 Generate Playlist Based on Weather"}
     </button>
+
+    {loading && (
+      <div className="loading-text">
+        Loading… Please wait
+      </div>
+    )}
+
   </div>
 )}
+
 
     </div>
   );

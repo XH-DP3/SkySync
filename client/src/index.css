@@ -25,3 +25,25 @@ body {
   width: 100%;
 }
 
+.playlist-main-title {
+    font-size: 2.8rem;
+    margin-bottom: 20px;
+    margin-top: 0;
+    text-align: center;
+  }
+  
+  .playlist-description {
+    margin-top: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .description-text {
+    white-space: pre-line;
+    line-height: 1.8;
+    font-size: 1.2rem;
+  }
+  
+  .ready-text {
+    margin-top: 10px;
+    font-size: 1.2rem;
+  }
