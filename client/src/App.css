@@ -51,58 +51,51 @@ button:disabled {
  */
 
 
-
- body, html, #root {
+/* ===== RESET ===== */
+body, html, #root {
     margin: 0;
     padding: 0;
     height: 100%;
     font-family: Monaco, monospace;
     overflow: hidden;
   }
-  
-  /* DAY BACKGROUND */
+   /* DAY BACKGROUND */
   .day {
     background: linear-gradient(-45deg, #87cefa, #e0f7fa, #aedff7, #a8e6ff);
     background-size: 400% 400%;
     animation: dayAnim 12s infinite ease;
     color: #000;
   }
-  
-  @keyframes dayAnim {
+   @keyframes dayAnim {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  
-  /* NIGHT BACKGROUND */
+   /* NIGHT BACKGROUND */
   .night {
     background: linear-gradient(-45deg, #000814, #00111a, #001a33, #000c1c);
     background-size: 400% 400%;
     animation: nightAnim 12s infinite ease;
     color: #fff;
   }
-  
-  @keyframes nightAnim {
+   @keyframes nightAnim {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  
-  .app {
+   .app {
     text-align: center;
     padding-top: 70px;
   }
-  
-  /* Container for weather text */
-#weather-box {
+   /* Container for weather text */
+ #weather-box {
     width: 320px;            /* keeps text aligned but not too wide */
     margin: 20px auto;       /* center the box */
     text-align: center;        /* align text inside to the left */
     line-height: 1.8;
     font-size: 1.3rem;
   }
-  
-  #loadBtn {
+   #loadBtn {
     margin-top: 25px;
     padding: 12px 25px;
     font-size: 1.1rem;
@@ -113,69 +106,57 @@ button:disabled {
     color: black;
     font-family: monospace;
   }
-
+ 
+ 
   .weather-bubble {
-    width: 360px;
-    margin: 30px auto 0 auto;
-    padding: 25px 35px;
-  
-    border-radius: 18px;
-    text-align: center;
+    width: 480px;                /* medium width */
+    padding: 32px 40px;
+    border-radius: 20px;
   
     /* Glassmorphism background */
-    background: rgba(0, 0, 0, 0.35);              /* dark semi-transparent so GIFs don't affect text */
+    background: rgba(0, 0, 0, 0.40);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-  
     border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.45);
   
-    color: white; /* ensures readability on all GIFs */
+    color: white;
+  
+    /* Position LEFT + moved UP */
+    margin-left: 8%;
+    margin-top: 40px;
   }
-
+  
+ 
+ 
   .initial-title {
     text-align: center;
     font-size: 5rem;
     margin-bottom: 20px;
   }
-  
-  body {
+   body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
   }
-
-  .weather-bubble {
-    background: rgba(0, 0, 0, 0.35); /* transparent */
-    padding: 40px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);  /* soft blur over GIF */
-    width: 70%;
-    max-width: 600px;
-    margin: 0 auto;
-  }
-
+ 
   body {
     margin: 0;
     padding: 0;
-  
-    /* IMPORTANT for background images/GIFs */
+     /* IMPORTANT for background images/GIFs */
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
-  
-    /* DO NOT set background-color: white here */
+     /* DO NOT set background-color: white here */
   }
-  
-  .spotify-section {
+   .spotify-section {
     margin-top: 25px;
     display: flex;
     justify-content: center;
     gap: 12px;
   }
-  
-  .spotify-input {
+   .spotify-input {
     width: 260px;
     padding: 12px;
     border-radius: 12px;
@@ -184,8 +165,7 @@ button:disabled {
     font-size: 1rem;
     font-family: monospace;
   }
-  
-  .spotify-generate-btn {
+   .spotify-generate-btn {
     padding: 12px 18px;
     border-radius: 12px;
     border: none;
@@ -197,10 +177,8 @@ button:disabled {
     transition: 0.2s;
     color: #000000;
   }
-  
-  .spotify-generate-btn:hover {
+   .spotify-generate-btn:hover {
     background: white;
     transform: scale(1.04);
   }
-  
-  
+ 

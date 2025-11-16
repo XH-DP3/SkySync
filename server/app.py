@@ -3,17 +3,20 @@ from flask_cors import CORS
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from weather_new import get_clean_weather
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
+@app.route("/api/weather_new")
+def weather_new():
+    return jsonify(get_clean_weather())
 
-
-@app.route('/api/hello', methods=['GET'])
-def hello():
-    return jsonify({
-        'message': 'Hello from Flask backend!'
-    })
+# @app.route('/api/hello', methods=['GET'])
+# def hello():
+#     return jsonify({
+#         'message': 'Hello from Flask backend!'
+#     })
 
 @app.route('/api/health', methods=['GET'])
 def health():
