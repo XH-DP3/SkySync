@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from weather import get_weather_state
 from openaiService import getSongParams, maketitle
-from playlist import makeplaylist
+from playlist import make_new_playlist
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -32,7 +32,7 @@ def makeplaylistcurrentweather():
     weather_data = get_weather_state()
     song_params = getSongParams(weather_data)
     title = maketitle(song_params, weather_data)
-    makeplaylist(weather_data)
+    make_new_playlist(weather_data)
     return jsonify({
         'status': 'playlist made',
         'title': title
@@ -47,7 +47,7 @@ def makeplaylistcustomweather():
 
     song_params = getSongParams(weather_data)
     title = maketitle(song_params, weather_data)
-    makeplaylist(weather_data)
+    make_new_playlist(weather_data)
     return jsonify({
         'status': 'playlist made',
         'title': title
