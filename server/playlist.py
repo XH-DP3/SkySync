@@ -20,11 +20,24 @@ client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 auth_manager = SpotifyOAuth(client_id=client_id, 
                             client_secret=client_secret, 
                             redirect_uri='http://127.0.0.1:8000/callback', 
-                            scope="user-top-read playlist-read-private user-read-private playlist-modify-public playlist-modify-private",
+                            scope="user-top-read playlist-read-private user-read-private playlist-modify-public playlist-modify-private user-modify-playback-state user-read-playback-state",
                             cache_path="token_playback.cache")
 
 
 sp = spotipy.Spotify(auth_manager=auth_manager)
+
+
+def playback(playlist_id):
+    devices = sp.devices()
+    device_id = devices['devices'][0]['id']
+    print("Using device:", device_id)
+
+    # Start shuffle
+    #sp.shuffle(state=True, device_id=device_id)
+
+    # Play playlist
+    playlist_uri = f"spotify:playlist:{playlist_id}"
+    sp.start_playback(device_id=device_id, context_uri=playlist_uri)
 
 
 
@@ -38,6 +51,7 @@ def make_new_playlist(weather_state):
     track_URIs = [f"spotify:track:{tid["ori_id"]}" for tid in filtered_track_ids]
     print(track_URIs)
     sp.playlist_add_items(new_playlist_id, track_URIs)
+    playback(new_playlist_id)
 
 
 
