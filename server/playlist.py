@@ -41,6 +41,6 @@ def make_new_playlist(weather_state):
 
 
 
-make_new_playlist(get_weather_state())
+#make_new_playlist(get_weather_state())
 #make_new_playlist({'current_weather': 'Clear sky', 'current_time': 'Morning'})
 

@@ -71,10 +71,6 @@ responses = openmeteo.weather_api(url, params=params)
 
 # Process first location. Add a for-loop for multiple locations or weather models
 response = responses[0]
-print(f"Coordinates: {response.Latitude()}°N {response.Longitude()}°E")
-print(f"Elevation: {response.Elevation()} m asl")
-print(f"Timezone: {response.Timezone()}{response.TimezoneAbbreviation()}")
-print(f"Timezone difference to GMT+0: {response.UtcOffsetSeconds()}s")
 
 # Process hourly data. The order of variables needs to be the same as requested.
 hourly = response.Hourly()
@@ -93,9 +89,6 @@ hourly_data["weather_code"] = hourly_weather_code
 hourly_dataframe = pd.DataFrame(data = hourly_data)
 
 hourly_dataframe["weather_description"] = hourly_dataframe["weather_code"].map(WEATHER_CODE_MAP)
-
-
-print("\nHourly data\n", hourly_dataframe)
 
 def unix_to_time(unix_ts):
     dt = datetime.datetime.fromtimestamp(unix_ts, tz=datetime.timezone.utc)
@@ -122,15 +115,12 @@ daily_dataframe = pd.DataFrame(data = daily_data)
 daily_dataframe["sunset_time"] = pd.to_datetime(daily_sunset, unit="s").tz_localize("UTC").tz_convert("America/Vancouver")
 daily_dataframe["sunrise_time"] = pd.to_datetime(daily_sunrise, unit="s").tz_localize("UTC").tz_convert("America/Vancouver")
 
-print("\nDaily data\n", daily_dataframe)
-
 
 
 def get_current_time() :
     now = datetime.now(pytz.timezone('America/Vancouver'))
     print(now)
 
-get_current_time()
 
 def get_current_weather(df):
     now = datetime.now(pytz.timezone('America/Vancouver'))
@@ -139,8 +129,6 @@ def get_current_weather(df):
         return None  # or handle no data case
     current = filtered.iloc[-1]["weather_description"]
     return current
-
-print(f"Current weather: {get_current_weather(hourly_dataframe)}")
     
 
 def is_within_one_hour_of_sunset(daily_df):
@@ -177,9 +165,6 @@ def is_within_one_hour_of_sunrise(daily_df):
     # Return True if within 1 hour (3600 seconds)
     return diff <= timedelta(hours=1)
 
-# Example usage
-print(f"one hr of sunset: {is_within_one_hour_of_sunset(daily_dataframe)}")
-print(f"one hr of sunrise: {is_within_one_hour_of_sunrise(daily_dataframe)}")
 
 # Define 8:00:00 AM as a time object
 morning_start = time(6, 0, 0)  # 10:30:00 AM
@@ -204,12 +189,10 @@ def get_current_time_of_day():
         return "Evening"
     else:
         return "Night"
-    
-print(get_current_time_of_day())
+
 
 def get_weather_state():
     return {"current_weather" : get_current_weather(hourly_dataframe), 
             "current_time" : get_current_time_of_day()}
 
-print(get_weather_state())
 

@@ -40,15 +40,11 @@ def get_all_track_ids():
 
     print(f"Total tracks fetched: {len(all_tracks)}")
 
-    # Example: print track names and artists
-    """for item in all_tracks:
-        track = item['track']
-        print(f"{track['name']} by {', '.join(artist['name'] for artist in track['artists'])}")"""
 
     # Assuming all_tracks is your full list of 700 track items
 
     # Extract track IDs from first 50 tracks
     return [item['track']['id'] for item in all_tracks if item['track'] and item['track']['id']]
 
-#print(get_all_track_ids())
+
 
