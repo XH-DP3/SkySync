@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+client/node_modules/
+client/dist/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+*.egg-info/
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
