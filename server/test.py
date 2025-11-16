@@ -1,2 +1,4 @@
-test = OpenAIService()
-print(test.test())
+from openaiService import openaiService
+
+test = openaiService()
+test.test()

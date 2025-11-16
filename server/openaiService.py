@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 
-class OpenAIService:
+class openaiService:
     """
     A service class to handle all interactions with the OpenAI API.
     It automatically loads the API key from the .env file.
@@ -25,11 +25,12 @@ class OpenAIService:
                  print("ERROR: OpenAI API Key not found. Please ensure OPENAI_API_KEY is set in your .env file.")
             raise e
 
-    def test():
-        client.responses.create(
+    def test(self):
+        response = self.client.responses.create(
             model="gpt-5",
-            input="Write a one-sentence bedtime story about a unicorn."
+            input="Write a one-sentence bedtime story about a unicorn.",
         )
+        print(response.output_text)
     
 
 
