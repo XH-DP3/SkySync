@@ -1,6 +1,8 @@
 import requests
 import pandas as pd
 from spotifystuff import get_all_track_ids
+from openaiService import getSongParams
+from weather import get_weather_state
 
 url = "https://api.reccobeats.com/v1/audio-features"
 
@@ -39,11 +41,23 @@ for chunk in chunk_list(track_ids, 40):
 
 filtered_high_valence = [track for track in all_filtered_features if track['valence'] > 0.7]
 
+def in_range_float(min, max, val):
+    return min <= val and val <= max
+
 def filter_tracks(vals):
-    filtered_high_valence = [track for track in all_filtered_features if track['valence'] > 0.7]
+    valence = vals.valence
+    danceability = vals.danceability
+    energy = vals.energy
+
+    print(f"Valence: {valence}")
+
+    return [track for track in all_filtered_features if (in_range_float(valence-0.1, valence+0.1, track['valence']) and in_range_float(danceability-0.2, danceability+0.2, track['danceability']) and in_range_float(energy-0.3, energy+0.3, track['energy']))]
 
 df_ff = pd.DataFrame(all_filtered_features)
 
+song_params = getSongParams(get_weather_state())
+print(song_params)
+filtered_high_valence = filter_tracks(song_params)
 df_fhv = pd.DataFrame(filtered_high_valence)
 
 print("Features (All)")
