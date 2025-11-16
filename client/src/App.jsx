@@ -44,6 +44,8 @@ const weatherImages = {
 function App() {
   const [weather, setWeather] = useState(null);
   const [spotifyLink, setSpotifyLink] = useState("");
+  const [playlistGenerated, setPlaylistGenerated] = useState(false);
+
 
   // ======= SET MAIN SCREEN BACKGROUND =======
   if (!weather) {
@@ -64,45 +66,70 @@ function App() {
     document.body.style.backgroundImage = `url(${bgImage})`;
   }
 
+  async function generatePlaylist() {
+    const res = await fetch("/api/make_playlist", { method: "POST" });
+    const data = await res.json();
+  
+    if (data.status === "success") {
+       setPlaylistGenerated(true);   // <-- This triggers the UI shift
+    }
+  }  
+
 
   return (
     <div className="app">
-
-      {/* ===============================================
-          MAIN SCREEN (before clicking Load Weather)
-      ================================================ */}
+  
+      {/* ============================
+          MAIN SCREEN BEFORE WEATHER
+      ============================== */}
       {!weather && (
         <div className="main-screen">
           <h1 className="initial-title">SkySync</h1>
-
+  
           <button id="loadBtn" onClick={loadWeather}>
             Load Weather
           </button>
         </div>
       )}
-
-      {/* ===============================================
-          WEATHER BUBBLE (after clicking Load Weather)
-      ================================================ */}
+  
+      {/* ====================================
+           AFTER LOADING WEATHER → FLEX LAYOUT
+      ===================================== */}
       {weather && (
-        <div className="weather-bubble">
-
-          <h1 className="bubble-title">Current Weather</h1>
-
-          <p>📅 Date: {weather.date}</p>
-          <p>🕒 Time: {weather.time}</p>
-          <p>🌡 Temperature: {weather.temperature}°C</p>
-          <p>⛅ Condition: {weather.condition}</p>
-          <p>🌅 Sunrise: {weather.sunrise}</p>
-          <p>🌇 Sunset: {weather.sunset}</p>
-
+        <div className={`page-layout ${playlistGenerated ? "shifted" : ""}`}>
+  
+          {/* -------- LEFT: WEATHER BUBBLE -------- */}
+          <div className="weather-bubble">
+            <h1 className="bubble-title">Current Weather</h1>
+  
+            <p>📅 Date: {weather.date}</p>
+            <p>🕒 Time: {weather.time}</p>
+            <p>🌡 Temperature: {weather.temperature}°C</p>
+            <p>⛅ Condition: {weather.condition}</p>
+            <p>🌅 Sunrise: {weather.sunrise}</p>
+            <p>🌇 Sunset: {weather.sunset}</p>
+          </div>
+  
+          {/* -------- RIGHT: PLAYLIST BUBBLE (only after Generate) -------- */}
+          {playlistGenerated && (
+            <div className="playlist-bubble">
+              <h1 className="bubble-title">Playlist Ready</h1>
+              <p>Your personalized playlist is generated!</p>
+              <p>Open it directly in Spotify.</p>
+  
+              <button className="spotify-open-btn">
+                Open Playlist
+              </button>
+            </div>
+          )}
+  
         </div>
       )}
-
-      {/* ===============================================
-          SPOTIFY INPUT (shown only after weather loads)
-      ================================================ */}
-      {weather && (
+  
+      {/* ========================================
+          SPOTIFY INPUT (below weather bubble)
+      ========================================= */}
+      {weather && !playlistGenerated && (
         <div className="spotify-section">
           <input
             type="text"
@@ -111,15 +138,19 @@ function App() {
             value={spotifyLink}
             onChange={(e) => setSpotifyLink(e.target.value)}
           />
-
-          <button className="spotify-generate-btn">
+  
+          <button
+            className="spotify-generate-btn"
+            onClick={() => setPlaylistGenerated(true)}
+          >
             Generate
           </button>
         </div>
       )}
-
+  
     </div>
   );
+  
 }
 
 export default App;
