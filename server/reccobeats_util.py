@@ -28,8 +28,9 @@ for chunk in chunk_list(track_ids, 40):
     response = requests.get(url, headers=headers, params=params)
     data = response.json()
     
-    for track in data['content']:
+    for original_id, track in zip(chunk, data['content']):
         filtered = {
+            'ori_id' : original_id,
             'id': track.get('id'),
             'valence': track.get('valence'),
             'danceability': track.get('danceability'),
@@ -39,25 +40,24 @@ for chunk in chunk_list(track_ids, 40):
 
 # all_filtered_features now contains filtered data for all tracks
 
-filtered_high_valence = [track for track in all_filtered_features if track['valence'] > 0.7]
 
 def in_range_float(min, max, val):
     return min <= val and val <= max
 
-def filter_tracks(vals):
+def filter_tracks_by_audio_ft(vals):
     valence = vals.valence
     danceability = vals.danceability
     energy = vals.energy
 
     print(f"Valence: {valence}")
 
-    return [track for track in all_filtered_features if (in_range_float(valence-0.1, valence+0.1, track['valence']) and in_range_float(danceability-0.2, danceability+0.2, track['danceability']) and in_range_float(energy-0.3, energy+0.3, track['energy']))]
+    return [track for track in all_filtered_features if (in_range_float(valence-0.1, valence+0.1, track['valence']) and in_range_float(danceability-0.2, danceability+0.2, track['danceability']) and in_range_float(energy-0.5, energy+0.5, track['energy']))]
 
 df_ff = pd.DataFrame(all_filtered_features)
 
 song_params = getSongParams(get_weather_state())
 print(song_params)
-filtered_high_valence = filter_tracks(song_params)
+filtered_high_valence = filter_tracks_by_audio_ft(song_params)
 df_fhv = pd.DataFrame(filtered_high_valence)
 
 print("Features (All)")

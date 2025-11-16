@@ -1,5 +1,8 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
+from weather import get_weather_state
+from openaiService import getSongParams, maketitle
+from playlist import makeplaylist
 
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
@@ -20,6 +23,34 @@ def health():
     return jsonify({
         'status': 'healthy'
     })
+
+@app.route('/api/makeplaylistcurrentweather', methods=['GET'])
+def makeplaylistcurrentweather():
+    weather_data = get_weather_state()
+    song_params = getSongParams(weather_data)
+    title = maketitle(song_params, weather_data)
+    makeplaylist(weather_data)
+    return jsonify({
+        'status': 'playlist made',
+        'title': title
+    })
+
+@app.route('/api/makeplaylistcustomweather', methods=['POST'])
+def makeplaylistcustomweather():
+    weather_data = request.get_json()
+
+    if not weather_data:
+        return jsonify({'error': 'No weather data provided'}), 400
+
+    song_params = getSongParams(weather_data)
+    title = maketitle(song_params, weather_data)
+    makeplaylist(weather_data)
+    return jsonify({
+        'status': 'playlist made',
+        'title': title
+    })
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
