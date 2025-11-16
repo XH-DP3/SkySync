@@ -52,7 +52,7 @@ function App() {
 
   // ======= LOAD WEATHER =======
   async function loadWeather() {
-    const res = await fetch("/api/weather_new");
+    const res = await fetch("/api/weather_new"); 
     const data = await res.json();
     setWeather(data);
 
@@ -134,23 +134,12 @@ function App() {
 
       {/* SPOTIFY INPUT BELOW WEATHER (before playlist appears) */}
       {weather && !playlistGenerated && (
-        <div className="spotify-section">
-          <input
-            type="text"
-            className="spotify-input"
-            placeholder="Paste your Spotify link..."
-            value={spotifyLink}
-            onChange={(e) => setSpotifyLink(e.target.value)}
-          />
-
-          <button
-            className="spotify-generate-btn"
-            onClick={generatePlaylist}
-          >
-            Generate
-          </button>
-        </div>
-      )}
+  <div className="generate-section">
+    <button className="generate-weather-btn" onClick={generatePlaylist}>
+      🎵 Generate Playlist Based on Weather
+    </button>
+  </div>
+)}
 
     </div>
   );
