@@ -25,6 +25,11 @@ class OpenAIService:
                  print("ERROR: OpenAI API Key not found. Please ensure OPENAI_API_KEY is set in your .env file.")
             raise e
 
+    def test():
+        client.responses.create(
+            model="gpt-5",
+            input="Write a one-sentence bedtime story about a unicorn."
+        )
     
 
 
