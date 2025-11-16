@@ -30,8 +30,8 @@ sp = spotipy.Spotify(auth_manager=auth_manager)
 
 def make_new_playlist(weather_state):
     song_params = getSongParams(weather_state)
-
-    new_playlist = sp.user_playlist_create("31butcal7mudp7rvfdcrowim7bci", maketitle(song_params, weather_state), public=False)
+    user = sp.current_user()
+    new_playlist = sp.user_playlist_create(user['id'], maketitle(song_params, weather_state), public=False)
     new_playlist_id = new_playlist["id"]
     random.shuffle(filter_tracks_by_audio_ft(song_params))
     filtered_track_ids = filter_tracks_by_audio_ft(song_params)[:50]
