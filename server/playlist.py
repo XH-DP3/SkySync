@@ -19,7 +19,7 @@ client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 
 auth_manager = SpotifyOAuth(client_id=client_id, 
                             client_secret=client_secret, 
-                            redirect_uri='http://127.0.0.1:8000/callback', 
+                            redirect_uri='http://127.0.0.1:8888/callback', 
                             scope="user-top-read playlist-read-private user-read-private playlist-modify-public playlist-modify-private user-modify-playback-state user-read-playback-state",
                             cache_path="token_playback.cache")
 
@@ -44,17 +44,24 @@ def playback(playlist_id):
 def make_new_playlist(weather_state):
     song_params = getSongParams(weather_state)
     user = sp.current_user()
-    new_playlist = sp.user_playlist_create(user['id'], maketitle(song_params, weather_state), public=False)
+
+    # 1. Capture the name in a variable first
+    final_playlist_name = maketitle(song_params, weather_state)
+
+    # 2. Use that variable when creating the playlist
+    new_playlist = sp.user_playlist_create(user['id'], final_playlist_name, public=False)
     new_playlist_id = new_playlist["id"]
-    random.shuffle(filter_tracks_by_audio_ft(song_params))
-    filtered_track_ids = filter_tracks_by_audio_ft(song_params)[:50]
-    track_URIs = [f"spotify:track:{tid["ori_id"]}" for tid in filtered_track_ids]
+
+    # (Minor Fix: Previous shuffle didn't save the result. This one does.)
+    all_tracks = filter_tracks_by_audio_ft(song_params)
+    random.shuffle(all_tracks)
+    filtered_track_ids = all_tracks[:50]
+
+    track_URIs = [f"spotify:track:{tid['ori_id']}" for tid in filtered_track_ids]
     print(track_URIs)
+    
     sp.playlist_add_items(new_playlist_id, track_URIs)
     playback(new_playlist_id)
 
-
-
-#make_new_playlist(get_weather_state())
-#make_new_playlist({'current_weather': 'Clear sky', 'current_time': 'Morning'})
-
+    # 3. Return BOTH the web link and the exact name
+    return new_playlist['external_urls']['spotify'], final_playlist_name

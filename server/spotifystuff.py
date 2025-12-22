@@ -14,12 +14,12 @@ client_secret = os.getenv('SPOTIFY_CLIENT_SECRET')
 
 auth_manager = SpotifyOAuth(client_id=client_id, 
                             client_secret=client_secret, 
-                            redirect_uri='http://127.0.0.1:8000/callback', 
+                            redirect_uri='http://127.0.0.1:8888/callback', 
                             scope="user-top-read playlist-read-private user-read-private playlist-modify-public playlist-modify-private user-modify-playback-state user-read-playback-state",
                             cache_path=".cache")
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
-playlist_id = '0JiVp7Z0pYKI8diUV6HJyQ'  # example Spotify playlist URI or ID
+playlist_id = '4k4kTCxwnV9sgE0whd3Gg2'  # example Spotify playlist URI or ID
 
 
 

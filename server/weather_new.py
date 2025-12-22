@@ -2,8 +2,9 @@ import requests
 from datetime import datetime
 
 def get_clean_weather():
+    # Vancouver's coordinate
     latitude = 49.2593
-    longitude = 123.2475
+    longitude = -123.2475
 
     url = (
         f"https://api.open-meteo.com/v1/forecast?latitude={latitude}"
