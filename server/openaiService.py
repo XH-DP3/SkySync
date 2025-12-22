@@ -42,13 +42,19 @@ def maketitle(song_params, weather_data):
     return response.output_text
 
 def makedescription(song_params, weather_data):
-    description = f"You are a helpful assistant that generates a title for a playlist based on the song parameters and the weather data. The song parameters are {song_params}. The weather data is {weather_data}. Generate a description for a playlist based on the song parameters and the weather data. The description should be a sentence that captures the mood and energy of the playlist. parameters are valence, energy, and dancability and are defined as float values from 0.00 to 1.00. {dancability}, {energy}, {valence}"
+    # 👇 I fixed the prompt below to remove "generates a title" and added a constraint.
+    description_prompt = (
+        f"You are a helpful assistant that generates a description for a playlist based on the song parameters and weather data. "
+        f"The song parameters are {song_params}. The weather data is {weather_data}. "
+        f"Generate a single sentence description that captures the mood. "
+        f"IMPORTANT: Return ONLY the description text. Do not include the word 'Title' or 'Description'. "
+        f"Parameters: {dancability}, {energy}, {valence}"
+    )
+    
     response = client.responses.create(
         model="gpt-5",
-        input=description,
+        input=description_prompt,
     )
     return response.output_text
-
-
 
 

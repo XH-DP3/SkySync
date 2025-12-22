@@ -15,12 +15,6 @@ CORS(app)  # Enable CORS for all routes
 def weather_new():
     return jsonify(get_clean_weather())
 
-# @app.route('/api/hello', methods=['GET'])
-# def hello():
-#     return jsonify({
-#         'message': 'Hello from Flask backend!'
-#     })
-
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({
@@ -31,13 +25,20 @@ def health():
 def makeplaylistcurrentweather():
     weather_data = get_weather_state()
     song_params = getSongParams(weather_data)
-    title = maketitle(song_params, weather_data)
-    description = makedescription(song_params,weather_data)
-    make_new_playlist(weather_data)
+    
+    # 1. Generate description (this is fine)
+    description = makedescription(song_params, weather_data)
+
+    # 2. CALL PLAYLIST FUNCTION AND CAPTURE THE TITLE
+    # make_new_playlist returns two things: (link, title)
+    spotify_link, title = make_new_playlist(weather_data)
+
+    # 3. Return the captured title
     return jsonify({
         'status': 'playlist made',
-        'title': title,
-        'description': description
+        'title': title,           # This now uses the title from Spotify!
+        'description': description,
+        'link': spotify_link      # (Optional) You can send the link too if you want
     })
 
 @app.route('/api/makeplaylistcustomweather', methods=['POST'])
