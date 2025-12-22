@@ -40,7 +40,6 @@ def playback(playlist_id):
     sp.start_playback(device_id=device_id, context_uri=playlist_uri)
 
 
-
 def make_new_playlist(weather_state):
     song_params = getSongParams(weather_state)
     user = sp.current_user()
@@ -52,7 +51,7 @@ def make_new_playlist(weather_state):
     new_playlist = sp.user_playlist_create(user['id'], final_playlist_name, public=False)
     new_playlist_id = new_playlist["id"]
 
-    # (Minor Fix: Previous shuffle didn't save the result. This one does.)
+    # (Minor Fix: Your previous shuffle didn't save the result. This one does.)
     all_tracks = filter_tracks_by_audio_ft(song_params)
     random.shuffle(all_tracks)
     filtered_track_ids = all_tracks[:50]
@@ -65,3 +64,4 @@ def make_new_playlist(weather_state):
 
     # 3. Return BOTH the web link and the exact name
     return new_playlist['external_urls']['spotify'], final_playlist_name
+

@@ -47,12 +47,15 @@ def makeplaylistcustomweather():
     if not weather_data:
         return jsonify({'error': 'No weather data provided'}), 400
 
-    song_params = getSongParams(weather_data)
-    title = maketitle(song_params, weather_data)
-    make_new_playlist(weather_data)
+    # 1. Call the function and capture the TWO return values
+    # (No need to calculate song_params or title here anymore!)
+    playlist_url, playlist_name = make_new_playlist(weather_data)
+
+    # 2. Return the exact name and URL to the frontend
     return jsonify({
         'status': 'playlist made',
-        'title': title
+        'title': playlist_name,  # Matches Spotify exactly
+        'url': playlist_url      # Useful for opening the playlist
     })
 
 if __name__ == '__main__':
