@@ -2,7 +2,7 @@
 
 A full-stack web application with React frontend (Vite) and Python Flask backend.
 
-Video Demonstration (Done by the event): https://developer.spotify.com/documentation/web-api/tutorials/getting-started
+Video Demonstration (Done by the event): https://youtu.be/BxqBU9g5j1k?si=KMWORhu0bPtMIqpr
 
 ## Project Structure
 
