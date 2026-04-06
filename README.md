@@ -20,22 +20,29 @@ This project was originally built collaboratively during HackCamp 2025 by Emmy H
 
 ```text
 SkySync/
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   ├── constants/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   └── package.json
-└── server/
+├── client
+│   ├── dist
+│   ├── index.html
+│   ├── node_modules
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── src
+│   └── vite.config.js
+├── package-lock.json
+├── README.md
+└── server
+    ├── __pycache__
     ├── app.py
-    ├── weather_new.py
+    ├── openaiService.py
     ├── playlist.py
     ├── reccobeats_util.py
+    ├── requirements.txt
     ├── spotifystuff.py
-    ├── openaiService.py
-    └── requirements.txt
+    ├── test.py
+    ├── token_playback.cache
+    ├── venv
+    ├── weather_new.py
+    └── weather.py
 ```
 
 ## Prerequisites
