@@ -9,6 +9,10 @@ __pycache__/
 venv/
 env/
 *.egg-info/
+.pytest_cache/
+*.cache
+token_playback.cache
+token_playback.cache-*
 
 # Environment variables
 .env
@@ -23,4 +27,3 @@ env/
 # OS
 .DS_Store
 Thumbs.db
-

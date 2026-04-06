@@ -1,263 +1,417 @@
-/* ===== RESET ===== */
-body, html, #root {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    font-family: Monaco, monospace;
-    overflow: hidden;
-  }
-  
-   /* DAY BACKGROUND */
-  .day {
-    background: linear-gradient(-45deg, #87cefa, #e0f7fa, #aedff7, #a8e6ff);
-    background-size: 400% 400%;
-    animation: dayAnim 12s infinite ease;
-    color: #000;
-  }
-   @keyframes dayAnim {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-  
-   /* NIGHT BACKGROUND */
-  .night {
-    background: linear-gradient(-45deg, #000814, #00111a, #001a33, #000c1c);
-    background-size: 400% 400%;
-    animation: nightAnim 12s infinite ease;
-    color: #fff;
-  }
-   @keyframes nightAnim {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-   .app {
-    text-align: center;
-    padding-top: 70px;
-  }
-   /* Container for weather text */
- #weather-box {
-    width: 320px;            /* keeps text aligned but not too wide */
-    margin: 20px auto;       /* center the box */
-    text-align: center;        /* align text inside to the left */
-    line-height: 1.8;
-    font-size: 1.3rem;
-  }
-   #loadBtn {
-    margin-top: 25px;
-    padding: 12px 25px;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    background: #ffffffdd;
-    color: black;
-    font-family: monospace;
-  }
- 
- 
-  .weather-bubble {
-    width: 480px;                /* medium width */
-    padding: 32px 40px;
-    border-radius: 20px;
-  
-    /* Glassmorphism background */
-    background: rgba(0, 0, 0, 0.40);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.45);
-  
-    color: white;
-  
-    /* Position LEFT + moved UP */
-  }
-  
- 
- 
-  .initial-title {
-    text-align: center;
-    font-size: 5rem;
-    margin-bottom: 20px;
-  }
-   body {
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
- 
-  body {
-    margin: 0;
-    padding: 0;
-     /* IMPORTANT for background images/GIFs */
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-     /* DO NOT set background-color: white here */
-  }
-   .spotify-section {
-    margin-top: 25px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-  }
-   .spotify-input {
-    width: 260px;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    outline: none;
-    font-size: 1rem;
-    font-family: monospace;
-  }
-   .spotify-generate-btn {
-    padding: 12px 18px;
-    border-radius: 12px;
-    border: none;
-    background: #ffffffdd;
-    cursor: pointer;
-    font-size: 1rem;
-    font-family: monospace;
-    font-weight: 600;
-    transition: 0.2s;
-    color: #000000;
-  }
-   .spotify-generate-btn:hover {
-    background: white;
-    transform: scale(1.04);
-  }
+* {
+  box-sizing: border-box;
+}
 
-  .page-layout {
-    display: flex;
-    justify-content: center;
-    align-items: stretch;   /* <— THIS makes them equal height */
-    gap: 60px;
-    margin-top: 80px;
-    width: 100%;
-  }
-  
-  
-  
-  /* Playlist bubble */
-  .playlist-bubble {
-    width: 380px;
-    padding: 30px;
-    background: rgba(0,0,0,0.4);
-    backdrop-filter: blur(12px);
-    border-radius: 18px;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.25);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    animation: fadeIn 0.4s ease;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  
-  .weather-bubble,
-.playlist-bubble {
-  width: 450px;
-  height: 450px;
-  padding: 40px;
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: #ffffff;
+  font-family: Monaco, monospace;
+}
+
+.app {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 100vh;
+  padding: 26px 18px 40px;
+}
+
+.initial-title {
+  font-size: clamp(2.7rem, 9vw, 4.7rem);
+  letter-spacing: 0.05em;
+  margin: 0;
+}
+
+.setup-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(300px, 1fr));
+  width: min(1160px, 100%);
+}
+
+.setup-bubble,
+.weather-bubble,
+.playlist-bubble,
+.preview-bubble,
+.history-bubble,
+.shared-bubble {
+  background: rgba(0, 0, 0, 0.43);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 20px;
-
-  background: rgba(0, 0, 0, 0.40);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.4);
-
-  color: white;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  padding: 22px;
   text-align: left;
 }
 
-.playlist-ready-subtitle {
-    font-size: 1.4rem;
-    font-weight: 400;
-    color: #ffffffcc;
-    margin-bottom: 10px;
-    text-align: left;
+.bubble-title {
+  font-size: 2rem;
+  margin: 0 0 14px;
+}
+
+.bubble-subtitle {
+  font-size: 1.35rem;
+  margin: 0 0 12px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  margin-top: 12px;
+  opacity: 0.95;
+}
+
+.text-input {
+  background: rgba(255, 255, 255, 0.95);
+  border: 0;
+  border-radius: 12px;
+  color: #1d1d1d;
+  font-family: Monaco, monospace;
+  font-size: 0.95rem;
+  padding: 11px 12px;
+  width: 100%;
+}
+
+.load-weather-btn,
+.spotify-generate-btn,
+.spotify-open-btn,
+.tiny-link-btn {
+  background: rgba(255, 255, 255, 0.92);
+  border: 0;
+  border-radius: 12px;
+  color: #111111;
+  cursor: pointer;
+  display: inline-flex;
+  font-family: Monaco, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  justify-content: center;
+  padding: 10px 15px;
+  text-decoration: none;
+  transition: transform 0.18s ease, background-color 0.18s ease;
+}
+
+.tiny-link-btn {
+  font-size: 0.8rem;
+  padding: 8px 11px;
+}
+
+.load-weather-btn:hover,
+.spotify-generate-btn:hover,
+.spotify-open-btn:hover,
+.tiny-link-btn:hover {
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.load-weather-btn:disabled,
+.spotify-generate-btn:disabled,
+.tiny-link-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.small-button-row,
+.action-row,
+.playlist-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.suggestion-list {
+  list-style: none;
+  margin: 8px 0 4px;
+  padding: 0;
+}
+
+.suggestion-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: Monaco, monospace;
+  font-size: 0.84rem;
+  margin-bottom: 6px;
+  padding: 7px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.suggestion-btn:hover {
+  background: rgba(255, 255, 255, 0.23);
+}
+
+.inline-note {
+  font-size: 0.84rem;
+  margin: 6px 0 0;
+  opacity: 0.92;
+}
+
+.slider-group {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr auto;
+  margin-top: 10px;
+}
+
+.slider-group input[type="range"] {
+  width: 100%;
+}
+
+.slider-value {
+  font-size: 0.83rem;
+  opacity: 0.95;
+}
+
+.toggle-grid {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.toggle-label {
+  align-items: center;
+  display: inline-flex;
+  gap: 7px;
+  font-size: 0.9rem;
+}
+
+.genre-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.genre-chip {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  display: inline-flex;
+  gap: 6px;
+  padding: 7px 8px;
+}
+
+.page-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  width: min(1160px, 100%);
+}
+
+.weather-bubble,
+.playlist-bubble {
+  min-height: 370px;
+}
+
+.weather-row {
+  line-height: 1.64;
+  margin: 0;
+}
+
+.weather-label {
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 700;
+}
+
+.playlist-main-title {
+  margin-top: 0;
+}
+
+.playlist-description {
+  margin-bottom: 12px;
+}
+
+.description-text {
+  line-height: 1.6;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.ready-text {
+  margin: 0 0 12px;
+}
+
+.feature-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.feature-pill {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  font-size: 0.76rem;
+  padding: 5px 9px;
+}
+
+.warning-list {
+  margin: 0 0 12px 16px;
+  padding: 0;
+}
+
+.warning-list li {
+  font-size: 0.84rem;
+  margin-bottom: 3px;
+}
+
+.share-url-text {
+  font-size: 0.73rem;
+  margin-top: 10px;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+.preview-section,
+.history-section {
+  width: min(1160px, 100%);
+}
+
+.preview-list,
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.preview-item {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto 1fr auto;
+  margin-bottom: 10px;
+}
+
+.preview-art {
+  border-radius: 8px;
+  display: block;
+  height: 44px;
+  object-fit: cover;
+  width: 44px;
+}
+
+.preview-art-placeholder {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.preview-track-name {
+  font-weight: 700;
+  margin: 0;
+}
+
+.preview-track-meta,
+.preview-track-genres {
+  font-size: 0.82rem;
+  margin: 2px 0 0;
+  opacity: 0.92;
+}
+
+.explicit-badge {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 5px;
+  display: inline-block;
+  font-size: 0.73rem;
+  margin-right: 6px;
+  padding: 1px 5px;
+}
+
+.history-item {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.history-title {
+  font-weight: 700;
+  margin: 0;
+}
+
+.history-meta {
+  font-size: 0.82rem;
+  margin: 2px 0 0;
+  opacity: 0.9;
+}
+
+.history-empty {
+  margin: 0;
+  opacity: 0.92;
+}
+
+.shared-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.shared-description,
+.shared-meta {
+  font-size: 0.86rem;
+  margin: 0 0 8px;
+  opacity: 0.94;
+}
+
+.loading-text {
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.error-text {
+  background: rgba(120, 0, 0, 0.35);
+  border: 1px solid rgba(255, 180, 180, 0.4);
+  border-radius: 10px;
+  color: #ffe0e0;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+}
+
+.error-with-action {
+  margin-top: 8px;
+}
+
+.playlist-link-warning {
+  color: rgba(255, 226, 169, 0.95);
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  .setup-grid,
+  .page-layout {
+    grid-template-columns: 1fr;
   }
 
-  .generate-section {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
+  .genre-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  
-  .generate-weather-btn {
-    background: white;
-    padding: 14px 28px;
-    font-size: 1.2rem;
-    border-radius: 12px;
-    border: none;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: 0.25s ease;
-  }
-  
-  .generate-weather-btn:hover {
-    background: #f0f0f0;
-    transform: translateY(-2px);
+}
+
+@media (max-width: 620px) {
+  .app {
+    padding: 18px 12px 30px;
   }
 
-  .spotify-generate-btn.loading {
-    opacity: 0.7;
-    cursor: not-allowed;
+  .genre-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .spotify-generate-btn.loading::after {
-    content: " ⏳";
-    animation: spin 1.2s linear infinite;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .spotify-generate-btn.loading::after {
-    content: " ⏳";
-    animation: spin 1.2s linear infinite;
-  }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
-  .spotify-generate-btn.loading {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-  
-  .spotify-generate-btn.loading::after {
-    animation: pulse 1.5s infinite ease-in-out;
-  }
-  
-  @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
-  }
-
-  .loading-text {
-    margin-top: 10px;
-    font-size: 16px;
-    color: white;       /* make visible */
-    opacity: 0.9;
-    text-align: center;
-  }
-
-  .playlist-bubble .bubble-title {
-    font-size: 42px;        /* SAME SIZE AS 'Current Weather' */
-    font-weight: 600;
-    margin-bottom: 20px;
-    color: white;
-    text-align: left;
-  }
-  
+}

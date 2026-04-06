@@ -1,60 +1,148 @@
 import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
 
-time = "The time of say is one of the following: Sunrise,Sunset,Morning,Afternoon,Evening,Night"
-dancability = "Danceability is a measure of how suitable a song is for dancing, ranging from 0 to 1. A score of 0 means the song is not danceable at all, while a score of 1 indicates it is highly danceable. This score takes into account factors like tempo, rhythm, beat consistency, and energy, with higher scores indicating stronger, more rhythmically engaging tracks."
-energy = "Energy in music refers to the intensity and liveliness of a track, with a range from 0 to 1. A score of 0 indicates a very calm, relaxed, or low-energy song, while a score of 1 represents a high-energy, intense track. It’s influenced by elements like tempo, loudness, and the overall drive or excitement in the music."
-valence = "Valence in music measures the emotional tone or mood of a track, with a range from 0 to 1. A score of 0 indicates a song with a more negative, sad, or dark feeling, while a score of 1 represents a more positive, happy, or uplifting mood. Tracks with a high valence tend to feel joyful or energetic, while those with a low valence may evoke feelings of melancholy or sadness."
-prompt = f"You are a helpful assistant that generates song parameters based on the weather data and the time of day. Generate a song parameters based on the weather data. the parameters are valence, energy, and dancability and are defined as float values from 0.00 to 1.00. Return the parameters in a JSON object with the keys 'valence', 'energy', and 'dancability'. the parameters are defined as follows: {dancability}, {energy}, {valence}. {time}"
-weather = f"The weather data is "
 load_dotenv()
 client = OpenAI()
 
+AUDIO_FEATURES_MODEL = os.getenv("OPENAI_AUDIO_FEATURES_MODEL", "gpt-4o-2024-08-06")
+TEXT_MODEL = os.getenv("OPENAI_TEXT_MODEL", "gpt-5")
+
+SONG_PARAMETER_SYSTEM_PROMPT = (
+    "You generate playlist audio features from weather context. "
+    "Return JSON with keys valence, danceability, and energy. "
+    "Each value must be a float from 0.0 to 1.0."
+)
+
+
+class AudioFeatures(BaseModel):
+    valence: float
+    danceability: float
+    energy: float
+
+
+class PlaylistOptions(BaseModel):
+    genres: list[str] = []
+    exclude_explicit: bool = False
+    personalize: bool = False
+
+
+def _clamp(value):
+    return max(0.0, min(1.0, float(value)))
+
+
+def _normalize_text(value):
+    return " ".join((value or "").strip().split())
+
+
+def _context_text(song_params, weather_data, options=None):
+    options = options or {}
+    genre_text = ", ".join(options.get("genres", [])) or "any genre"
+    explicit_text = "exclude explicit tracks" if options.get("exclude_explicit") else "allow explicit tracks"
+    personalize_text = (
+        "personalized to the listener's Spotify taste"
+        if options.get("personalize")
+        else "not personalized"
+    )
+
+    return (
+        f"Song parameters: {song_params}. "
+        f"Weather data: {weather_data}. "
+        f"Genre preference: {genre_text}. "
+        f"Explicit setting: {explicit_text}. "
+        f"Personalization: {personalize_text}. "
+        "Audio features definitions: "
+        "danceability measures rhythmic suitability for dancing, "
+        "energy measures intensity and activity, "
+        "valence measures positivity."
+    )
+
+
+def to_audio_features(values):
+    if isinstance(values, AudioFeatures):
+        return values
+
+    def _read(field_name, fallback):
+        if hasattr(values, field_name):
+            return getattr(values, field_name)
+        if isinstance(values, dict):
+            return values.get(field_name, fallback)
+        return fallback
+
+    return AudioFeatures(
+        valence=_clamp(_read("valence", 0.5)),
+        danceability=_clamp(_read("danceability", 0.5)),
+        energy=_clamp(_read("energy", 0.5))
+    )
+
+
 def getSongParams(weather_data):
-    weather_prompt = f"{weather} {weather_data}"
-
-    class AudioFeatures(BaseModel):
-        valence: float
-        danceability: float
-        energy: float
-        
-
-    
     completion = client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06", 
+        model=AUDIO_FEATURES_MODEL,
         messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": weather_prompt},
+            {"role": "system", "content": SONG_PARAMETER_SYSTEM_PROMPT},
+            {"role": "user", "content": f"Weather context: {weather_data}"}
         ],
-        response_format=AudioFeatures,
+        response_format=AudioFeatures
     )
-    return completion.choices[0].message.parsed
+    parsed = completion.choices[0].message.parsed
+    if parsed is None:
+        raise RuntimeError("Unable to parse audio features from model response.")
 
-
-def maketitle(song_params, weather_data):
-    title_prompt = f"You are a helpful assistant that generates a title for a playlist based on the song parameters and the weather data. The song parameters are {song_params}. The weather data is {weather_data}. Generate a title for a song based on the song parameters and the weather data. The title should be a single word or phrase that captures the mood and energy of the song. The title should be 1-3 words long. parameters are valence, energy, and dancability and are defined as float values from 0.00 to 1.00. {dancability}, {energy}, {valence}"
-    response = client.responses.create(
-        model="gpt-5",
-        input=title_prompt,
+    return AudioFeatures(
+        valence=_clamp(parsed.valence),
+        danceability=_clamp(parsed.danceability),
+        energy=_clamp(parsed.energy)
     )
-    return response.output_text
 
-def makedescription(song_params, weather_data):
-    # 👇 I fixed the prompt below to remove "generates a title" and added a constraint.
-    description_prompt = (
-        f"You are a helpful assistant that generates a description for a playlist based on the song parameters and weather data. "
-        f"The song parameters are {song_params}. The weather data is {weather_data}. "
-        f"Generate a single sentence description that captures the mood. "
-        f"IMPORTANT: Return ONLY the description text. Do not include the word 'Title' or 'Description'. "
-        f"Parameters: {dancability}, {energy}, {valence}"
+
+def apply_audio_overrides(song_params, overrides=None):
+    if not overrides:
+        return song_params
+
+    base = to_audio_features(song_params)
+
+    def _resolve_override(field_name, default_value):
+        value = overrides.get(field_name)
+        if value is None or value == "":
+            return default_value
+        return _clamp(value)
+
+    return AudioFeatures(
+        valence=_resolve_override("valence", base.valence),
+        danceability=_resolve_override("danceability", base.danceability),
+        energy=_resolve_override("energy", base.energy)
     )
-    
-    response = client.responses.create(
-        model="gpt-5",
-        input=description_prompt,
+
+
+def to_audio_feature_dict(song_params):
+    resolved = to_audio_features(song_params)
+    return {
+        "valence": round(resolved.valence, 3),
+        "danceability": round(resolved.danceability, 3),
+        "energy": round(resolved.energy, 3)
+    }
+
+
+def maketitle(song_params, weather_data, options=None):
+    prompt = (
+        f"{_context_text(song_params, weather_data, options)} "
+        "Create a playlist title with 1-3 words. "
+        "Return only the title text."
     )
-    return response.output_text
+    response = client.responses.create(model=TEXT_MODEL, input=prompt)
+    title = _normalize_text(response.output_text)
+    return title if title else "SkySync Mix"
 
 
+def makedescription(song_params, weather_data, options=None):
+    prompt = (
+        f"{_context_text(song_params, weather_data, options)} "
+        "Write exactly one sentence for the playlist description. "
+        "Return only the description text."
+    )
+    response = client.responses.create(model=TEXT_MODEL, input=prompt)
+    description = _normalize_text(response.output_text)
+    return description if description else "A weather-matched playlist for your current vibe."

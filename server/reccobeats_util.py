@@ -1,106 +1,114 @@
+import time
+
 import requests
-import pandas as pd
-from spotifystuff import get_all_track_ids
-from openaiService import getSongParams
-from weather import get_weather_state
 
-url = "https://api.reccobeats.com/v1/audio-features"
+from spotifystuff import DEFAULT_SEED_PLAYLIST_ID, get_all_track_ids
 
-# List of track IDs (Spotify or ReccoBeats IDs), between 1 and 40
-track_ids = get_all_track_ids()
+RECCOBEATS_AUDIO_FEATURES_URL = "https://api.reccobeats.com/v1/audio-features"
+RECCOBEATS_BATCH_SIZE = 40
+REQUEST_TIMEOUT_SECONDS = 15
+AUDIO_FEATURES_CACHE_TTL_SECONDS = 60 * 30
 
-def chunk_list(lst, chunk_size):
-    """Yield successive chunks from lst of size chunk_size."""
-    for i in range(0, len(lst), chunk_size):
-        yield lst[i:i + chunk_size]
-
-all_filtered_features = []
-
-track_ids = get_all_track_ids()  # Your 700+ track IDs
-
-for chunk in chunk_list(track_ids, 40):
-    params = {
-        'ids': ','.join(chunk)
-    }
-    headers = {
-        'Accept': 'application/json'
-    }
-    response = requests.get(url, headers=headers, params=params)
-    data = response.json()
-    
-    for original_id, track in zip(chunk, data['content']):
-        filtered = {
-            'ori_id' : original_id,
-            'id': track.get('id'),
-            'valence': track.get('valence'),
-            'danceability': track.get('danceability'),
-            'energy': track.get('energy')
-        }
-        all_filtered_features.append(filtered)
-
-# all_filtered_features now contains filtered data for all tracks
+_audio_features_cache = {}
 
 
-def in_range_float(min, max, val):
-    if val is None:
+def _chunk(values, chunk_size):
+    for index in range(0, len(values), chunk_size):
+        yield values[index:index + chunk_size]
+
+
+def _is_cache_valid(cache_entry):
+    if not cache_entry:
         return False
-    return min <= val and val <= max
-
-def filter_tracks_by_audio_ft(vals):
-    valence = vals.valence
-    danceability = vals.danceability
-    energy = vals.energy
-
-    print(f"Valence: {valence}")
-
-    return [track for track in all_filtered_features if (in_range_float(valence-0.1, valence+0.1, track['valence']) and in_range_float(danceability-0.2, danceability+0.2, track['danceability']) and in_range_float(energy-0.5, energy+0.5, track['energy']))]
-
-df_ff = pd.DataFrame(all_filtered_features)
-
-song_params = getSongParams(get_weather_state())
-print(song_params)
-filtered_high_valence = filter_tracks_by_audio_ft(song_params)
-df_fhv = pd.DataFrame(filtered_high_valence)
-
-print("Features (All)")
-print(df_ff)
-
-print(">0.7 Valence")
-print(df_fhv)
-#print(response.text) 
+    return (time.time() - cache_entry["timestamp"]) < AUDIO_FEATURES_CACHE_TTL_SECONDS
 
 
-"""
-params = {
-    'ids': ','.join(track_ids)
-}
+def _fetch_audio_features(track_ids):
+    features_map = {}
 
-headers = {
-  'Accept': 'application/json'
-}
+    for chunk in _chunk(track_ids, RECCOBEATS_BATCH_SIZE):
+        response = requests.get(
+            RECCOBEATS_AUDIO_FEATURES_URL,
+            headers={"Accept": "application/json"},
+            params={"ids": ",".join(chunk)},
+            timeout=REQUEST_TIMEOUT_SECONDS
+        )
+        response.raise_for_status()
+        payload = response.json()
+        content = payload.get("content", [])
 
-response = requests.request("GET", url, headers=headers, params=params)
+        for original_id, feature in zip(chunk, content):
+            features_map[original_id] = {
+                "ori_id": original_id,
+                "id": feature.get("id"),
+                "valence": feature.get("valence"),
+                "danceability": feature.get("danceability"),
+                "energy": feature.get("energy")
+            }
 
-data = response.json()
-filtered_features = []
-for track in data['content']:
-    filtered = {
-        'id': track.get('id'),
-        'valence': track.get('valence'),
-        'danceability': track.get('danceability'),
-        'energy': track.get('energy')
-    }
-    filtered_features.append(filtered)
+    return features_map
 
-filtered_high_valence = [track for track in filtered_features if track['valence'] > 0.7]
 
-df_ff = pd.DataFrame(filtered_features)
+def get_audio_features_for_track_ids(track_ids, force_refresh=False):
+    normalized_ids = [track_id for track_id in track_ids if track_id]
+    if not normalized_ids:
+        return {}
 
-df_fhv = pd.DataFrame(filtered_high_valence)
+    missing_ids = []
+    for track_id in normalized_ids:
+        cache_entry = _audio_features_cache.get(track_id)
+        if force_refresh or not _is_cache_valid(cache_entry):
+            missing_ids.append(track_id)
 
-print("Features (All)")
-print(df_ff)
+    if missing_ids:
+        fetched_map = _fetch_audio_features(missing_ids)
+        now = time.time()
+        for track_id, feature in fetched_map.items():
+            _audio_features_cache[track_id] = {
+                "timestamp": now,
+                "feature": feature
+            }
 
-print(">0.7 Valence")
-print(df_fhv)
-#print(response.text) """
+    result = {}
+    for track_id in normalized_ids:
+        cache_entry = _audio_features_cache.get(track_id)
+        if cache_entry and cache_entry.get("feature"):
+            result[track_id] = dict(cache_entry["feature"])
+
+    return result
+
+
+def get_all_audio_features(force_refresh=False, track_ids=None):
+    resolved_track_ids = track_ids or get_all_track_ids(DEFAULT_SEED_PLAYLIST_ID)
+    features_map = get_audio_features_for_track_ids(
+        resolved_track_ids,
+        force_refresh=force_refresh
+    )
+    return [features_map[track_id] for track_id in resolved_track_ids if track_id in features_map]
+
+
+def in_range_float(min_value, max_value, value):
+    if value is None:
+        return False
+    return min_value <= value <= max_value
+
+
+def filter_tracks_by_audio_ft(values, track_ids=None):
+    valence = getattr(values, "valence", None)
+    danceability = getattr(values, "danceability", None)
+    energy = getattr(values, "energy", None)
+    if valence is None or danceability is None or energy is None:
+        return []
+
+    features = get_all_audio_features(track_ids=track_ids)
+    return [
+        track
+        for track in features
+        if (
+            in_range_float(valence - 0.1, valence + 0.1, track["valence"])
+            and in_range_float(
+                danceability - 0.2, danceability + 0.2, track["danceability"]
+            )
+            and in_range_float(energy - 0.5, energy + 0.5, track["energy"])
+        )
+    ]
