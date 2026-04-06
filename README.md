@@ -2,6 +2,8 @@
 
 SkySync is a full-stack app that creates weather-aware Spotify playlists with preview, personalization, filtering, and sharing.
 
+This project was originally built collaboratively during HackCamp 2025 by Emmy Ha, Gina Lau, Omar Wael Eman, and Xinghao Huang, and has since been further refined and modified by Xinghao Huang.
+
 ## Highlights
 
 - Location-aware weather (city search + current geolocation)
