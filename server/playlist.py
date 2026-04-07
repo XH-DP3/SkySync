@@ -18,6 +18,8 @@ from spotifystuff import (
     get_genre_counts_for_catalog,
     get_spotify_client,
     get_track_catalog,
+    get_user_track_catalog,
+    has_spotify_user_connection,
     get_user_taste_profile
 )
 
@@ -47,8 +49,40 @@ def _resolve_preferences(preferences=None):
     }
 
 
-def _build_catalog_with_features(seed_playlist_id, force_refresh=False):
+def _load_source_catalog(seed_playlist_id, prefer_user_playlists=True, force_refresh=False):
+    connected_user = has_spotify_user_connection()
+    if prefer_user_playlists and connected_user:
+        try:
+            user_payload = get_user_track_catalog(force_refresh=force_refresh)
+            return (
+                user_payload["catalog"],
+                {
+                    "type": "user_playlists",
+                    "label": f"Picked from your Spotify playlists ({user_payload['playlist_count']} scanned)."
+                },
+                []
+            )
+        except Exception:
+            pass
+
     base_catalog = get_track_catalog(seed_playlist_id, force_refresh=force_refresh)
+    return (
+        base_catalog,
+        {
+            "type": "seed_playlist",
+            "label": "Picked from the shared starter catalog."
+        },
+        ["Using the shared starter catalog instead of your Spotify playlists."]
+        if prefer_user_playlists and connected_user else []
+    )
+
+
+def _build_catalog_with_features(seed_playlist_id, prefer_user_playlists=True, force_refresh=False):
+    base_catalog, source_info, source_warnings = _load_source_catalog(
+        seed_playlist_id,
+        prefer_user_playlists=prefer_user_playlists,
+        force_refresh=force_refresh
+    )
     catalog_with_genres = enrich_catalog_with_genres(base_catalog)
     track_ids = [track["id"] for track in catalog_with_genres if track.get("id")]
     features_map = get_audio_features_for_track_ids(track_ids, force_refresh=force_refresh)
@@ -67,7 +101,7 @@ def _build_catalog_with_features(seed_playlist_id, force_refresh=False):
         }
         combined.append(merged)
 
-    return combined
+    return combined, source_info, source_warnings
 
 
 def _matches_genres(track, selected_genres):
@@ -172,6 +206,9 @@ def _pick_track_ids_for_playlist(ranked_tracks, preview_track_ids=None):
         if track_id in id_to_track and track_id not in selected_ids:
             selected_ids.append(track_id)
 
+    if selected_ids:
+        return selected_ids[:MAX_TRACKS_PER_PLAYLIST]
+
     for track in ranked_tracks:
         track_id = track.get("id")
         if not track_id or track_id in selected_ids:
@@ -185,7 +222,7 @@ def _pick_track_ids_for_playlist(ranked_tracks, preview_track_ids=None):
 
 
 def playback(playlist_id):
-    spotify_client = get_spotify_client()
+    spotify_client = get_spotify_client(user_required=True)
     try:
         devices = spotify_client.devices().get("devices", [])
         if not devices:
@@ -203,7 +240,7 @@ def _create_playlist_on_spotify(track_ids, playlist_name, auto_play=False):
     if not track_ids:
         raise RuntimeError("No tracks selected for playlist creation.")
 
-    spotify_client = get_spotify_client()
+    spotify_client = get_spotify_client(user_required=True)
     user = spotify_client.current_user()
 
     new_playlist = spotify_client.user_playlist_create(
@@ -219,7 +256,11 @@ def _create_playlist_on_spotify(track_ids, playlist_name, auto_play=False):
     if auto_play:
         playback(playlist_id)
 
-    return new_playlist["external_urls"]["spotify"]
+    spotify_link = ((new_playlist.get("external_urls") or {}).get("spotify") or "").strip()
+    if spotify_link:
+        return spotify_link
+
+    return f"https://open.spotify.com/playlist/{playlist_id}"
 
 
 def generate_playlist_bundle(
@@ -234,13 +275,15 @@ def generate_playlist_bundle(
     resolved_preferences = _resolve_preferences(preferences)
     resolved_action = action if action in {"preview", "create"} else "preview"
     resolved_seed_playlist_id = seed_playlist_id or DEFAULT_SEED_PLAYLIST_ID
+    prefer_user_playlists = True
 
     base_song_params = getSongParams(weather_state)
     song_params = apply_audio_overrides(base_song_params, resolved_preferences)
     resolved_song_params = to_audio_features(song_params)
 
-    catalog = _build_catalog_with_features(
+    catalog, source_info, source_warnings = _build_catalog_with_features(
         resolved_seed_playlist_id,
+        prefer_user_playlists=prefer_user_playlists,
         force_refresh=force_refresh
     )
 
@@ -248,7 +291,7 @@ def generate_playlist_bundle(
         raise RuntimeError("No track catalog available. Check your Spotify seed playlist.")
 
     filtered_catalog = _apply_hard_filters(catalog, resolved_preferences)
-    warnings = []
+    warnings = list(source_warnings)
 
     if not filtered_catalog:
         filtered_catalog = catalog
@@ -296,6 +339,7 @@ def generate_playlist_bundle(
         "selected_track_ids": chosen_track_ids,
         "preferences": resolved_preferences,
         "available_genres": available_genres,
+        "source_summary": source_info["label"],
         "warnings": warnings
     }
 

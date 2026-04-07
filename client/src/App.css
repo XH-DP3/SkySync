@@ -19,6 +19,11 @@ body {
   font-family: Monaco, monospace;
 }
 
+:root {
+  --ui-font-size: 0.95rem;
+  --ui-font-size-small: 0.9rem;
+}
+
 .app {
   align-items: center;
   display: flex;
@@ -68,10 +73,36 @@ body {
 
 .field-label {
   display: block;
-  font-size: 0.9rem;
+  font-size: var(--ui-font-size-small);
   margin-bottom: 6px;
   margin-top: 12px;
   opacity: 0.95;
+}
+
+.section-kicker {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.control-surface,
+.button-surface {
+  border-radius: 16px;
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.control-surface {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.button-surface {
+  background: rgba(13, 45, 85, 0.38);
+  border: 1px solid rgba(113, 179, 255, 0.28);
 }
 
 .text-input {
@@ -80,7 +111,7 @@ body {
   border-radius: 12px;
   color: #1d1d1d;
   font-family: Monaco, monospace;
-  font-size: 0.95rem;
+  font-size: var(--ui-font-size);
   padding: 11px 12px;
   width: 100%;
 }
@@ -96,7 +127,7 @@ body {
   cursor: pointer;
   display: inline-flex;
   font-family: Monaco, monospace;
-  font-size: 0.95rem;
+  font-size: var(--ui-font-size);
   font-weight: 700;
   justify-content: center;
   padding: 10px 15px;
@@ -104,8 +135,13 @@ body {
   transition: transform 0.18s ease, background-color 0.18s ease;
 }
 
+.action-btn {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(228, 239, 255, 0.94));
+  box-shadow: 0 6px 14px rgba(5, 16, 36, 0.18);
+}
+
 .tiny-link-btn {
-  font-size: 0.8rem;
+  font-size: var(--ui-font-size);
   padding: 8px 11px;
 }
 
@@ -134,6 +170,10 @@ body {
   margin-top: 10px;
 }
 
+.button-surface .small-button-row {
+  margin-top: 0;
+}
+
 .suggestion-list {
   list-style: none;
   margin: 8px 0 4px;
@@ -147,7 +187,7 @@ body {
   color: #ffffff;
   cursor: pointer;
   font-family: Monaco, monospace;
-  font-size: 0.84rem;
+  font-size: var(--ui-font-size-small);
   margin-bottom: 6px;
   padding: 7px 10px;
   text-align: left;
@@ -159,7 +199,7 @@ body {
 }
 
 .inline-note {
-  font-size: 0.84rem;
+  font-size: var(--ui-font-size-small);
   margin: 6px 0 0;
   opacity: 0.92;
 }
@@ -177,7 +217,7 @@ body {
 }
 
 .slider-value {
-  font-size: 0.83rem;
+  font-size: var(--ui-font-size-small);
   opacity: 0.95;
 }
 
@@ -191,7 +231,7 @@ body {
   align-items: center;
   display: inline-flex;
   gap: 7px;
-  font-size: 0.9rem;
+  font-size: var(--ui-font-size-small);
 }
 
 .genre-grid {
@@ -224,6 +264,7 @@ body {
 }
 
 .weather-row {
+  font-size: var(--ui-font-size-small);
   line-height: 1.64;
   margin: 0;
 }
@@ -272,7 +313,7 @@ body {
 }
 
 .warning-list li {
-  font-size: 0.84rem;
+  font-size: var(--ui-font-size-small);
   margin-bottom: 3px;
 }
 
@@ -322,7 +363,7 @@ body {
 
 .preview-track-meta,
 .preview-track-genres {
-  font-size: 0.82rem;
+  font-size: var(--ui-font-size-small);
   margin: 2px 0 0;
   opacity: 0.92;
 }
@@ -349,7 +390,7 @@ body {
 }
 
 .history-meta {
-  font-size: 0.82rem;
+  font-size: var(--ui-font-size-small);
   margin: 2px 0 0;
   opacity: 0.9;
 }
@@ -367,13 +408,13 @@ body {
 
 .shared-description,
 .shared-meta {
-  font-size: 0.86rem;
+  font-size: var(--ui-font-size-small);
   margin: 0 0 8px;
   opacity: 0.94;
 }
 
 .loading-text {
-  font-size: 0.9rem;
+  font-size: var(--ui-font-size-small);
   margin-top: 8px;
 }
 

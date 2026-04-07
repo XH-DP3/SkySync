@@ -26,7 +26,18 @@ const WEATHER_IMAGES = {
   thunderstorm: { day: thunderDay, night: thunderNight }
 };
 
+function normalizeDayFlag(isDay) {
+  if (isDay === true || isDay === 1 || isDay === "1") {
+    return true;
+  }
+  if (isDay === false || isDay === 0 || isDay === "0") {
+    return false;
+  }
+  return Boolean(isDay);
+}
+
 export function getWeatherBackground(category, isDay) {
-  const timeOfDay = isDay === 1 ? "day" : "night";
-  return WEATHER_IMAGES[category]?.[timeOfDay] ?? MAIN_BACKGROUND;
+  const normalizedCategory = String(category || "").trim().toLowerCase();
+  const timeOfDay = normalizeDayFlag(isDay) ? "day" : "night";
+  return WEATHER_IMAGES[normalizedCategory]?.[timeOfDay] ?? MAIN_BACKGROUND;
 }

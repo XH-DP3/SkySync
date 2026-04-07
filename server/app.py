@@ -1,19 +1,76 @@
 import logging
+import os
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, redirect, request
 from flask_cors import CORS
 
 from playlist import generate_playlist_bundle, make_new_playlist
+from spotifystuff import (
+    clear_spotify_auth,
+    complete_spotify_auth,
+    get_spotify_auth_status,
+    get_spotify_auth_url
+)
 from weather_new import get_clean_weather, get_weather_state, search_locations
 
 app = Flask(__name__)
 CORS(app)
 app.logger.setLevel(logging.INFO)
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+
+
+def _resolve_client_redirect_url():
+    return os.getenv("CLIENT_APP_URL", "http://127.0.0.1:3000")
 
 
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "healthy"})
+
+
+@app.route("/api/spotify/status", methods=["GET"])
+def spotify_status():
+    return jsonify({"status": "ok", **get_spotify_auth_status()})
+
+
+@app.route("/api/spotify/auth-url", methods=["GET"])
+def spotify_auth_url():
+    try:
+        return jsonify({"status": "ok", "authorize_url": get_spotify_auth_url()})
+    except Exception as error:
+        app.logger.exception("Failed to start Spotify auth.")
+        return (
+            jsonify({"status": "error", "message": f"Unable to start Spotify auth: {error}"}),
+            500
+        )
+
+
+@app.route("/api/spotify/callback", methods=["GET"])
+def spotify_callback():
+    code = request.args.get("code")
+    state = request.args.get("state")
+    error = request.args.get("error")
+    client_redirect_url = _resolve_client_redirect_url()
+
+    if error:
+        return redirect(f"{client_redirect_url}?spotify=error")
+
+    if not code:
+        return redirect(f"{client_redirect_url}?spotify=missing_code")
+
+    try:
+        complete_spotify_auth(code=code, state=state)
+        return redirect(f"{client_redirect_url}?spotify=connected")
+    except Exception:
+        app.logger.exception("Spotify auth callback failed.")
+        clear_spotify_auth()
+        return redirect(f"{client_redirect_url}?spotify=error")
+
+
+@app.route("/api/spotify/logout", methods=["POST"])
+def spotify_logout():
+    clear_spotify_auth()
+    return jsonify({"status": "ok"})
 
 
 @app.route("/api/locations/search", methods=["GET"])

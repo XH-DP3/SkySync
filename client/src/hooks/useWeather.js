@@ -6,6 +6,13 @@ import {
 
 function getErrorMessage(error, fallbackMessage) {
   if (error instanceof Error && error.message) {
+    if (
+      error.message.includes("Connection aborted") ||
+      error.message.includes("Connection reset by peer") ||
+      error.message.includes("Weather service is temporarily unavailable")
+    ) {
+      return "Weather service is temporarily unavailable. Please try again.";
+    }
     return error.message;
   }
   return fallbackMessage;

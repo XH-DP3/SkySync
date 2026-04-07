@@ -16,6 +16,7 @@ FeaturePill.propTypes = {
 export default function PlaylistCard({ playlist, shareUrl, onCopyShareUrl }) {
   const hasLink = Boolean(playlist.link);
   const hasSongParams = Boolean(playlist.songParams);
+  const isCreatedPlaylist = playlist.action === "create";
 
   return (
     <div className="playlist-bubble">
@@ -28,6 +29,7 @@ export default function PlaylistCard({ playlist, shareUrl, onCopyShareUrl }) {
       )}
 
       <p className="ready-text">Your personalized playlist is ready.</p>
+      {playlist.sourceSummary && <p className="shared-meta">{playlist.sourceSummary}</p>}
 
       {hasSongParams && (
         <div className="feature-pill-row">
@@ -59,9 +61,13 @@ export default function PlaylistCard({ playlist, shareUrl, onCopyShareUrl }) {
             Copy Share Link
           </button>
         </div>
-      ) : (
+      ) : isCreatedPlaylist ? (
         <p className="playlist-link-warning">
           Playlist created, but no Spotify URL was returned.
+        </p>
+      ) : (
+        <p className="playlist-link-warning">
+          Preview ready. Create the playlist to save it to Spotify.
         </p>
       )}
 
@@ -75,6 +81,8 @@ PlaylistCard.propTypes = {
     title: PropTypes.string.isRequired,
     description: PropTypes.string,
     link: PropTypes.string,
+    action: PropTypes.string,
+    sourceSummary: PropTypes.string,
     warnings: PropTypes.arrayOf(PropTypes.string),
     songParams: PropTypes.shape({
       valence: PropTypes.number,

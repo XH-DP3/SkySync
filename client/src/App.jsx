@@ -9,6 +9,9 @@ import { usePlaylist } from "./hooks/usePlaylist";
 import { useWeather } from "./hooks/useWeather";
 
 const HISTORY_STORAGE_KEY = "skysync.history";
+const SETUP_STORAGE_KEY = "skysync.setup";
+const SPOTIFY_AUTO_CONNECT_KEY = "skysync.spotifyAutoConnect";
+const PENDING_CREATE_KEY = "skysync.pendingCreate";
 const MAX_HISTORY_ITEMS = 25;
 
 const FORECAST_OPTIONS = [
@@ -50,6 +53,26 @@ function saveHistoryToStorage(items) {
     localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items));
   } catch {
     // ignore localStorage write errors
+  }
+}
+
+function loadSetupFromStorage() {
+  try {
+    const raw = sessionStorage.getItem(SETUP_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveSetupToStorage(payload) {
+  try {
+    sessionStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore sessionStorage write errors
   }
 }
 
@@ -129,6 +152,11 @@ function App() {
   const [shareUrl, setShareUrl] = useState("");
   const [sharedItem, setSharedItem] = useState(null);
   const [historyItems, setHistoryItems] = useState(loadHistoryFromStorage);
+  const [spotifyAuth, setSpotifyAuth] = useState({
+    isLoading: true,
+    connected: false,
+    user: null
+  });
 
   const [audioOverrides, setAudioOverrides] = useState({
     valence: { enabled: false, value: 0.5 },
@@ -148,6 +176,7 @@ function App() {
 
   const isBusy = isWeatherLoading || isPlaylistLoading;
   const locationLabel = toLocationLabel(weather);
+  const canUseSpotifyAccountFeatures = spotifyAuth.connected;
 
   const genreChoices = useMemo(() => {
     const merged = [
@@ -167,17 +196,144 @@ function App() {
   }, [historyItems]);
 
   useEffect(() => {
+    const restoredSetup = loadSetupFromStorage();
     const sharedParam = new URLSearchParams(window.location.search).get("shared");
-    if (!sharedParam) {
-      return;
+    const spotifyParam = new URLSearchParams(window.location.search).get("spotify");
+
+    if (restoredSetup) {
+      if (typeof restoredSetup.locationQuery === "string") {
+        setLocationQuery(restoredSetup.locationQuery);
+      }
+      if (restoredSetup.selectedLocation) {
+        setSelectedLocation(restoredSetup.selectedLocation);
+      }
+      if (typeof restoredSetup.forecastMode === "string") {
+        setForecastMode(restoredSetup.forecastMode);
+      }
+      if (restoredSetup.weather) {
+        setWeatherSnapshot(restoredSetup.weather);
+      }
+      if (restoredSetup.audioOverrides) {
+        setAudioOverrides(restoredSetup.audioOverrides);
+      }
+      if (restoredSetup.playlistOptions) {
+        setPlaylistOptions(restoredSetup.playlistOptions);
+      }
     }
-    try {
-      const parsed = decodeSharePayload(sharedParam);
-      setSharedItem(parsed);
-    } catch {
+
+    if (!sharedParam) {
       setSharedItem(null);
+    } else {
+      try {
+        const parsed = decodeSharePayload(sharedParam);
+        setSharedItem(parsed);
+      } catch {
+        setSharedItem(null);
+      }
+    }
+
+    if (spotifyParam === "connected") {
+      setUiMessage("Spotify connected. Account-specific features are ready.");
+    } else if (spotifyParam === "error") {
+      setUiMessage("Spotify connection failed. Please try again.");
+    } else if (spotifyParam === "missing_code") {
+      setUiMessage("Spotify did not return an authorization code.");
+    }
+
+    if (spotifyParam) {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("spotify");
+      window.history.replaceState({}, "", nextUrl.toString());
     }
   }, []);
+
+  useEffect(() => {
+    saveSetupToStorage({
+      locationQuery,
+      selectedLocation,
+      forecastMode,
+      weather,
+      audioOverrides,
+      playlistOptions
+    });
+  }, [
+    audioOverrides,
+    forecastMode,
+    locationQuery,
+    playlistOptions,
+    selectedLocation,
+    weather
+  ]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadSpotifyStatus = async () => {
+      try {
+        const response = await fetch("/api/spotify/status");
+        const data = await response.json();
+        if (ignore) {
+          return;
+        }
+
+        setSpotifyAuth({
+          isLoading: false,
+          connected: Boolean(data.connected),
+          user: data.user ?? null
+        });
+
+        const spotifyParam = new URLSearchParams(window.location.search).get("spotify");
+        const hasAutoConnected = sessionStorage.getItem(SPOTIFY_AUTO_CONNECT_KEY) === "done";
+        if (!data.connected && !spotifyParam && !hasAutoConnected) {
+          sessionStorage.setItem(SPOTIFY_AUTO_CONNECT_KEY, "done");
+          setTimeout(() => {
+            handleConnectSpotify({ silent: true });
+          }, 120);
+        }
+      } catch {
+        if (!ignore) {
+          setSpotifyAuth({
+            isLoading: false,
+            connected: false,
+            user: null
+          });
+        }
+      }
+    };
+
+    loadSpotifyStatus();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const pendingCreate = sessionStorage.getItem(PENDING_CREATE_KEY) === "true";
+    if (!spotifyAuth.connected || !playlist || !pendingCreate || isPlaylistLoading) {
+      return;
+    }
+
+    sessionStorage.removeItem(PENDING_CREATE_KEY);
+    handleCreatePlaylist();
+  }, [isPlaylistLoading, playlist, spotifyAuth.connected]);
+
+  useEffect(() => {
+    if (canUseSpotifyAccountFeatures) {
+      return;
+    }
+
+    setPlaylistOptions((current) => {
+      if (!current.personalize && !current.autoPlay) {
+        return current;
+      }
+
+      return {
+        ...current,
+        personalize: false,
+        autoPlay: false
+      };
+    });
+  }, [canUseSpotifyAccountFeatures]);
 
   useEffect(() => {
     if (!playlist || playlist.action !== "create" || !playlist.link || !weather) {
@@ -322,6 +478,14 @@ function App() {
   };
 
   const handleCreatePlaylist = async () => {
+    if (!canUseSpotifyAccountFeatures) {
+      sessionStorage.setItem(PENDING_CREATE_KEY, "true");
+      setUiMessage("Connect Spotify to save this playlist to your account.");
+      handleConnectSpotify();
+      return;
+    }
+
+    sessionStorage.removeItem(PENDING_CREATE_KEY);
     const result = await createFromLatestPreview();
     if (result?.weather) {
       setWeatherSnapshot(result.weather);
@@ -379,6 +543,43 @@ function App() {
     }
   };
 
+  const handleConnectSpotify = async ({ silent = false } = {}) => {
+    if (!silent) {
+      setUiMessage("Opening Spotify sign-in...");
+    }
+
+    try {
+      const response = await fetch("/api/spotify/auth-url");
+      const data = await response.json();
+      if (!response.ok || data.status === "error" || !data.authorize_url) {
+        throw new Error(data?.message ?? "Unable to start Spotify login.");
+      }
+      window.location.href = data.authorize_url;
+    } catch (error) {
+      setUiMessage(error instanceof Error ? error.message : "Unable to start Spotify login.");
+    }
+  };
+
+  const handleDisconnectSpotify = async () => {
+    try {
+      await fetch("/api/spotify/logout", {
+        method: "POST"
+      });
+    } finally {
+      setSpotifyAuth({
+        isLoading: false,
+        connected: false,
+        user: null
+      });
+      setPlaylistOptions((current) => ({
+        ...current,
+        personalize: false,
+        autoPlay: false
+      }));
+      setUiMessage("Spotify disconnected.");
+    }
+  };
+
   return (
     <div className="app">
       <h1 className="initial-title">SkySync</h1>
@@ -388,72 +589,77 @@ function App() {
       <div className="setup-grid">
         <div className="setup-bubble">
           <h2 className="bubble-subtitle">Weather Setup</h2>
-          <label className="field-label" htmlFor="location-input">
-            City Search
-          </label>
-          <input
-            id="location-input"
-            className="text-input"
-            value={locationQuery}
-            onChange={(event) => handleLocationInput(event.target.value)}
-            placeholder="Type city name..."
-          />
+          <div className="control-surface">
+            <p className="section-kicker">Inputs</p>
+            <label className="field-label" htmlFor="location-input">
+              City Search
+            </label>
+            <input
+              id="location-input"
+              className="text-input"
+              value={locationQuery}
+              onChange={(event) => handleLocationInput(event.target.value)}
+              placeholder="Type city name..."
+            />
 
-          <div className="small-button-row">
-            <button type="button" className="tiny-link-btn" onClick={handleUseCurrentLocation}>
-              Use Current Location
-            </button>
-            <button
-              type="button"
-              className="tiny-link-btn"
-              onClick={() => handleLoadWeather(true)}
-              disabled={isBusy}
+            {isSearchingLocations && <p className="inline-note">Searching locations...</p>}
+            {locationResults.length > 0 && (
+              <ul className="suggestion-list">
+                {locationResults.slice(0, 6).map((item) => (
+                  <li key={`${item.latitude}-${item.longitude}`}>
+                    <button
+                      type="button"
+                      className="suggestion-btn"
+                      onClick={() => handleSelectLocation(item)}
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <label className="field-label" htmlFor="forecast-mode">
+              Forecast Mode
+            </label>
+            <select
+              id="forecast-mode"
+              className="text-input"
+              value={forecastMode}
+              onChange={(event) => setForecastMode(event.target.value)}
             >
-              Refresh Weather
-            </button>
+              {FORECAST_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {isSearchingLocations && <p className="inline-note">Searching locations...</p>}
-          {locationResults.length > 0 && (
-            <ul className="suggestion-list">
-              {locationResults.slice(0, 6).map((item) => (
-                <li key={`${item.latitude}-${item.longitude}`}>
-                  <button
-                    type="button"
-                    className="suggestion-btn"
-                    onClick={() => handleSelectLocation(item)}
-                  >
-                    {item.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <label className="field-label" htmlFor="forecast-mode">
-            Forecast Mode
-          </label>
-          <select
-            id="forecast-mode"
-            className="text-input"
-            value={forecastMode}
-            onChange={(event) => setForecastMode(event.target.value)}
-          >
-            {FORECAST_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-
-          <button
-            className="load-weather-btn"
-            onClick={() => handleLoadWeather(false)}
-            disabled={isBusy}
-            type="button"
-          >
-            {isWeatherLoading ? "Loading Weather..." : "Load Weather"}
-          </button>
+          <div className="button-surface">
+            <p className="section-kicker">Actions</p>
+            <div className="small-button-row">
+              <button type="button" className="tiny-link-btn action-btn" onClick={handleUseCurrentLocation}>
+                Use Current Location
+              </button>
+              <button
+                type="button"
+                className="tiny-link-btn action-btn"
+                onClick={() => handleLoadWeather(true)}
+                disabled={isBusy}
+              >
+                Refresh Weather
+              </button>
+              <button
+                className="load-weather-btn action-btn"
+                onClick={() => handleLoadWeather(false)}
+                disabled={isBusy}
+                type="button"
+              >
+                {isWeatherLoading ? "Loading Weather..." : "Load Weather"}
+              </button>
+            </div>
+          </div>
 
           {locationError && <p className="error-text">{locationError}</p>}
           {weatherError && (
@@ -473,6 +679,34 @@ function App() {
         <div className="setup-bubble">
           <h2 className="bubble-subtitle">Playlist Controls</h2>
           <p className="inline-note">Override AI audio features if you want a specific vibe.</p>
+          <div className="error-with-action">
+            <p className="inline-note">
+              {spotifyAuth.isLoading
+                ? "Checking Spotify connection..."
+                : spotifyAuth.connected
+                  ? `Connected as ${spotifyAuth.user?.display_name ?? "Spotify User"}.`
+                  : "Preview works without Spotify login. Connect Spotify to personalize, auto-play, or create playlists in your own account."}
+            </p>
+            {spotifyAuth.connected ? (
+              <button
+                type="button"
+                className="tiny-link-btn action-btn"
+                onClick={handleDisconnectSpotify}
+                disabled={isBusy}
+              >
+                Disconnect Spotify
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="tiny-link-btn action-btn"
+                onClick={handleConnectSpotify}
+                disabled={isBusy || spotifyAuth.isLoading}
+              >
+                Connect Spotify
+              </button>
+            )}
+          </div>
 
           {[
             ["valence", "Mood (Valence)"],
@@ -539,6 +773,7 @@ function App() {
               <input
                 type="checkbox"
                 checked={playlistOptions.personalize}
+                disabled={!canUseSpotifyAccountFeatures}
                 onChange={(event) =>
                   setPlaylistOptions((current) => ({
                     ...current,
@@ -552,6 +787,7 @@ function App() {
               <input
                 type="checkbox"
                 checked={playlistOptions.autoPlay}
+                disabled={!canUseSpotifyAccountFeatures}
                 onChange={(event) =>
                   setPlaylistOptions((current) => ({
                     ...current,

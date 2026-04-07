@@ -1,4 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+const PLAYLIST_STORAGE_KEY = "skysync.playlistState";
 
 function getErrorMessage(error, fallbackMessage) {
   if (error instanceof Error && error.message) {
@@ -12,6 +14,7 @@ function normalizePlaylistPayload(data) {
     title: data.title ?? "SkySync Mix",
     description: data.description ?? "",
     link: data.link ?? "",
+    sourceSummary: data.source_summary ?? "",
     action: data.action ?? "preview",
     previewTracks: Array.isArray(data.preview_tracks) ? data.preview_tracks : [],
     selectedTrackIds: Array.isArray(data.selected_track_ids)
@@ -23,11 +26,39 @@ function normalizePlaylistPayload(data) {
   };
 }
 
+function loadPlaylistState() {
+  try {
+    const raw = sessionStorage.getItem(PLAYLIST_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function savePlaylistState(payload) {
+  try {
+    sessionStorage.setItem(PLAYLIST_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // ignore sessionStorage write errors
+  }
+}
+
 export function usePlaylist() {
-  const [playlist, setPlaylist] = useState(null);
+  const persistedState = loadPlaylistState();
+  const [playlist, setPlaylist] = useState(persistedState?.playlist ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [lastRequest, setLastRequest] = useState(null);
+  const [lastRequest, setLastRequest] = useState(persistedState?.lastRequest ?? null);
+
+  useEffect(() => {
+    savePlaylistState({
+      playlist,
+      lastRequest
+    });
+  }, [lastRequest, playlist]);
 
   const availableGenres = useMemo(() => {
     if (!playlist) {
@@ -75,12 +106,13 @@ export function usePlaylist() {
       }
 
       const normalized = normalizePlaylistPayload(data);
+      const previewIds = normalized.previewTracks.map((track) => track.id).filter(Boolean);
       setPlaylist(normalized);
       setLastRequest({
         location,
         forecastMode,
         preferences,
-        previewTrackIds: normalized.selectedTrackIds
+        previewTrackIds: previewIds
       });
 
       return {
@@ -123,7 +155,7 @@ export function usePlaylist() {
       preferences: lastRequest.preferences,
       action: "create",
       regenerate: false,
-      previewTrackIds: playlist.selectedTrackIds,
+      previewTrackIds: playlist.previewTracks.map((track) => track.id).filter(Boolean),
       forceRefresh: false
     });
   };
