@@ -26,6 +26,20 @@ function normalizePlaylistPayload(data) {
   };
 }
 
+function buildPreviewSnapshot(playlist) {
+  if (!playlist) {
+    return null;
+  }
+
+  return {
+    title: playlist.title ?? "",
+    description: playlist.description ?? "",
+    trackIds: Array.isArray(playlist.previewTracks)
+      ? playlist.previewTracks.map((track) => track.id).filter(Boolean)
+      : []
+  };
+}
+
 function loadPlaylistState() {
   try {
     const raw = sessionStorage.getItem(PLAYLIST_STORAGE_KEY);
@@ -74,6 +88,8 @@ export function usePlaylist() {
     action = "preview",
     regenerate = false,
     previewTrackIds = [],
+    previewTitle = "",
+    previewDescription = "",
     forceRefresh = false
   } = {}) => {
     setIsLoading(true);
@@ -87,6 +103,8 @@ export function usePlaylist() {
         action,
         regenerate,
         preview_track_ids: previewTrackIds,
+        preview_title: previewTitle,
+        preview_description: previewDescription,
         force_refresh: forceRefresh
       };
 
@@ -149,13 +167,17 @@ export function usePlaylist() {
       return null;
     }
 
+    const previewSnapshot = buildPreviewSnapshot(playlist);
+
     return runGeneration({
       location: lastRequest.location,
       forecastMode: lastRequest.forecastMode,
       preferences: lastRequest.preferences,
       action: "create",
       regenerate: false,
-      previewTrackIds: playlist.previewTracks.map((track) => track.id).filter(Boolean),
+      previewTrackIds: previewSnapshot?.trackIds ?? [],
+      previewTitle: previewSnapshot?.title ?? "",
+      previewDescription: previewSnapshot?.description ?? "",
       forceRefresh: false
     });
   };

@@ -29,6 +29,10 @@ class PlaylistOptions(BaseModel):
     personalize: bool = False
 
 
+class GenreExpansion(BaseModel):
+    genres: list[str] = []
+
+
 def _clamp(value):
     return max(0.0, min(1.0, float(value)))
 
@@ -146,3 +150,45 @@ def makedescription(song_params, weather_data, options=None):
     response = client.responses.create(model=TEXT_MODEL, input=prompt)
     description = _normalize_text(response.output_text)
     return description if description else "A weather-matched playlist for your current vibe."
+
+
+def expand_genre_queries(genres):
+    normalized = []
+    for genre in genres or []:
+        cleaned = _normalize_text(str(genre)).lower()
+        if cleaned and cleaned not in normalized:
+            normalized.append(cleaned)
+
+    if not normalized:
+        return []
+
+    prompt = (
+        "Given these music genres, suggest up to 5 related Spotify-searchable genre phrases "
+        "that would help find more tracks when the catalog is too small. "
+        "Keep the suggestions close to the original genres, avoid duplicates, and prefer broad, real genre names. "
+        f"Genres: {normalized}"
+    )
+
+    try:
+        completion = client.beta.chat.completions.parse(
+            model=AUDIO_FEATURES_MODEL,
+            messages=[
+                {"role": "system", "content": "Return JSON with one key, genres, as an array of short strings."},
+                {"role": "user", "content": prompt}
+            ],
+            response_format=GenreExpansion
+        )
+        parsed = completion.choices[0].message.parsed
+    except Exception:
+        return []
+
+    if parsed is None:
+        return []
+
+    expanded = []
+    for genre in parsed.genres:
+        cleaned = _normalize_text(str(genre)).lower()
+        if cleaned and cleaned not in normalized and cleaned not in expanded:
+            expanded.append(cleaned)
+
+    return expanded[:5]

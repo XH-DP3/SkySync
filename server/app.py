@@ -122,6 +122,8 @@ def generate_playlist():
     action = payload.get("action", "preview")
     regenerate = bool(payload.get("regenerate", False))
     preview_track_ids = payload.get("preview_track_ids") or []
+    preview_title = payload.get("preview_title")
+    preview_description = payload.get("preview_description")
     seed_playlist_id = payload.get("seed_playlist_id")
     force_refresh = bool(payload.get("force_refresh", False))
 
@@ -143,6 +145,8 @@ def generate_playlist():
             action=action,
             regenerate=regenerate,
             preview_track_ids=preview_track_ids,
+            preview_title=preview_title,
+            preview_description=preview_description,
             seed_playlist_id=seed_playlist_id,
             force_refresh=force_refresh
         )

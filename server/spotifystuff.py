@@ -286,6 +286,34 @@ def _playlist_track_to_catalog_item(track):
     }
 
 
+def search_tracks_for_genres(genres, limit_per_genre=10):
+    spotify_client = get_spotify_client()
+    deduped_tracks = {}
+
+    for genre in genres or []:
+        cleaned_genre = str(genre).strip()
+        if not cleaned_genre:
+            continue
+
+        queries = [f'genre:"{cleaned_genre}"', cleaned_genre]
+        for query in queries:
+            try:
+                response = spotify_client.search(q=query, type="track", limit=limit_per_genre)
+            except Exception:
+                continue
+
+            items = ((response.get("tracks") or {}).get("items")) or []
+            for track in items:
+                catalog_item = _playlist_track_to_catalog_item(track)
+                if catalog_item:
+                    deduped_tracks.setdefault(catalog_item["id"], catalog_item)
+
+            if items:
+                break
+
+    return list(deduped_tracks.values())
+
+
 def _fetch_user_playlist_catalog():
     spotify_client = get_spotify_client(user_required=True)
     playlists = []

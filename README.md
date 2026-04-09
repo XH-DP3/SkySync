@@ -21,17 +21,13 @@ This project was originally built collaboratively during HackCamp 2025 by Emmy H
 ```text
 SkySync/
 ├── client
-│   ├── dist
 │   ├── index.html
-│   ├── node_modules
 │   ├── package-lock.json
 │   ├── package.json
 │   ├── src
 │   └── vite.config.js
-├── package-lock.json
 ├── README.md
 └── server
-    ├── __pycache__
     ├── app.py
     ├── openaiService.py
     ├── playlist.py
@@ -39,11 +35,11 @@ SkySync/
     ├── requirements.txt
     ├── spotifystuff.py
     ├── test.py
-    ├── token_playback.cache
-    ├── venv
     ├── weather_new.py
     └── weather.py
 ```
+
+Generated folders such as `client/node_modules`, `client/dist`, `server/__pycache__`, and local virtualenv/cache files are intentionally excluded from source control.
 
 ## Prerequisites
 
@@ -69,6 +65,8 @@ OPENAI_TEXT_MODEL=gpt-5
 ```
 
 `SPOTIFY_SEED_PLAYLIST_ID` is now required. The app no longer falls back to a hardcoded playlist ID.
+
+Do not commit `server/.env` or any local Spotify/OpenAI cache files.
 
 ## Run Locally
 

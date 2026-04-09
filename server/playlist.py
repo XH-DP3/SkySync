@@ -5,6 +5,7 @@ from spotipy.exceptions import SpotifyException
 
 from openaiService import (
     apply_audio_overrides,
+    expand_genre_queries,
     getSongParams,
     makedescription,
     maketitle,
@@ -20,11 +21,13 @@ from spotifystuff import (
     get_track_catalog,
     get_user_track_catalog,
     has_spotify_user_connection,
-    get_user_taste_profile
+    get_user_taste_profile,
+    search_tracks_for_genres
 )
 
 MAX_TRACKS_PER_PLAYLIST = 50
 PREVIEW_TRACK_COUNT = 10
+MIN_FILTERED_TRACKS = 10
 
 
 def _normalize_genres(genres):
@@ -83,7 +86,13 @@ def _build_catalog_with_features(seed_playlist_id, prefer_user_playlists=True, f
         prefer_user_playlists=prefer_user_playlists,
         force_refresh=force_refresh
     )
-    catalog_with_genres = enrich_catalog_with_genres(base_catalog)
+    combined = _enrich_catalog_for_ranking(base_catalog, force_refresh=force_refresh)
+
+    return combined, source_info, source_warnings
+
+
+def _enrich_catalog_for_ranking(catalog, force_refresh=False):
+    catalog_with_genres = enrich_catalog_with_genres(catalog)
     track_ids = [track["id"] for track in catalog_with_genres if track.get("id")]
     features_map = get_audio_features_for_track_ids(track_ids, force_refresh=force_refresh)
 
@@ -101,7 +110,7 @@ def _build_catalog_with_features(seed_playlist_id, prefer_user_playlists=True, f
         }
         combined.append(merged)
 
-    return combined, source_info, source_warnings
+    return combined
 
 
 def _matches_genres(track, selected_genres):
@@ -129,6 +138,73 @@ def _apply_hard_filters(catalog, preferences):
         filtered.append(track)
 
     return filtered
+
+
+def _dedupe_catalog_tracks(*catalogs):
+    deduped = {}
+    for catalog in catalogs:
+        for track in catalog or []:
+            track_id = track.get("id")
+            if track_id and track_id not in deduped:
+                deduped[track_id] = track
+    return list(deduped.values())
+
+
+def _fill_minimum_tracks(filtered_catalog, fallback_catalog, minimum_count):
+    if len(filtered_catalog) >= minimum_count:
+        return filtered_catalog, False
+
+    existing_ids = {track.get("id") for track in filtered_catalog if track.get("id")}
+    expanded_catalog = list(filtered_catalog)
+
+    for track in fallback_catalog:
+        track_id = track.get("id")
+        if not track_id or track_id in existing_ids:
+            continue
+        expanded_catalog.append(track)
+        existing_ids.add(track_id)
+        if len(expanded_catalog) >= minimum_count:
+            return expanded_catalog, True
+
+    return expanded_catalog, len(expanded_catalog) > len(filtered_catalog)
+
+
+def _supplement_catalog_for_genres(filtered_catalog, preferences, force_refresh=False):
+    selected_genres = preferences["genres"]
+    if not selected_genres or len(filtered_catalog) >= MIN_FILTERED_TRACKS:
+        return filtered_catalog, []
+
+    warnings = []
+    search_genres = list(selected_genres)
+    related_genres = expand_genre_queries(selected_genres)
+    for genre in related_genres:
+        if genre not in search_genres:
+            search_genres.append(genre)
+
+    supplemental_catalog = search_tracks_for_genres(search_genres, limit_per_genre=12)
+    if not supplemental_catalog:
+        return filtered_catalog, warnings
+
+    supplemental_catalog = _enrich_catalog_for_ranking(
+        supplemental_catalog,
+        force_refresh=force_refresh
+    )
+    supplemental_preferences = dict(preferences)
+    supplemental_preferences["genres"] = search_genres
+    supplemental_catalog = _apply_hard_filters(supplemental_catalog, supplemental_preferences)
+    merged_catalog = _dedupe_catalog_tracks(filtered_catalog, supplemental_catalog)
+
+    if len(merged_catalog) > len(filtered_catalog):
+        warnings.append(
+            "Added extra tracks from Spotify search to fill the requested genre selection."
+        )
+
+    if related_genres:
+        warnings.append(
+            f"Expanded genre matching with related styles: {', '.join(related_genres[:3])}."
+        )
+
+    return merged_catalog, warnings
 
 
 def _score_track(track, target_features, preferences, taste_profile):
@@ -221,6 +297,20 @@ def _pick_track_ids_for_playlist(ranked_tracks, preview_track_ids=None):
     return selected_ids[:MAX_TRACKS_PER_PLAYLIST]
 
 
+def _preview_tracks_from_ids(ranked_tracks, preview_track_ids=None):
+    if not preview_track_ids:
+        return None
+
+    id_to_track = {track["id"]: track for track in ranked_tracks if track.get("id")}
+    preview_tracks = []
+    for track_id in preview_track_ids:
+        track = id_to_track.get(track_id)
+        if track:
+            preview_tracks.append(_as_preview_track(track))
+
+    return preview_tracks or None
+
+
 def playback(playlist_id):
     spotify_client = get_spotify_client(user_required=True)
     try:
@@ -269,6 +359,8 @@ def generate_playlist_bundle(
     action="preview",
     regenerate=False,
     preview_track_ids=None,
+    preview_title=None,
+    preview_description=None,
     seed_playlist_id=None,
     force_refresh=False
 ):
@@ -293,9 +385,27 @@ def generate_playlist_bundle(
     filtered_catalog = _apply_hard_filters(catalog, resolved_preferences)
     warnings = list(source_warnings)
 
+    supplemented_catalog, supplement_warnings = _supplement_catalog_for_genres(
+        filtered_catalog,
+        resolved_preferences,
+        force_refresh=force_refresh
+    )
+    filtered_catalog = supplemented_catalog
+    warnings.extend(supplement_warnings)
+
     if not filtered_catalog:
         filtered_catalog = catalog
         warnings.append("No tracks matched all filters. Showing best matches from full catalog.")
+    elif len(filtered_catalog) < MIN_FILTERED_TRACKS:
+        filtered_catalog, relaxed_filters = _fill_minimum_tracks(
+            filtered_catalog,
+            catalog,
+            MIN_FILTERED_TRACKS
+        )
+        if relaxed_filters:
+            warnings.append(
+                "Not enough genre matches were available, so additional best-fit tracks were added to reach 10 songs."
+            )
 
     taste_profile = None
     if resolved_preferences["personalize"]:
@@ -312,11 +422,18 @@ def generate_playlist_bundle(
     if not ranked_tracks:
         raise RuntimeError("Unable to rank tracks for playlist generation.")
 
-    preview_tracks = [_as_preview_track(track) for track in ranked_tracks[:PREVIEW_TRACK_COUNT]]
+    preview_tracks = _preview_tracks_from_ids(ranked_tracks, preview_track_ids=preview_track_ids)
+    if preview_tracks is None:
+        preview_tracks = [_as_preview_track(track) for track in ranked_tracks[:PREVIEW_TRACK_COUNT]]
     chosen_track_ids = _pick_track_ids_for_playlist(ranked_tracks, preview_track_ids=preview_track_ids)
 
-    title = maketitle(resolved_song_params, weather_state, options=resolved_preferences)
-    description = makedescription(resolved_song_params, weather_state, options=resolved_preferences)
+    title = (preview_title or "").strip()
+    if not title:
+        title = maketitle(resolved_song_params, weather_state, options=resolved_preferences)
+
+    description = (preview_description or "").strip()
+    if not description:
+        description = makedescription(resolved_song_params, weather_state, options=resolved_preferences)
 
     playlist_link = ""
     if resolved_action == "create":

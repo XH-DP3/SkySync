@@ -11,12 +11,14 @@ env/
 *.egg-info/
 .pytest_cache/
 *.cache
+*.cache.sqlite
 token_playback.cache
 token_playback.cache-*
 
 # Environment variables
 .env
 .env.local
+server/.env
 
 # IDE
 .vscode/
