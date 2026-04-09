@@ -19,8 +19,6 @@ from spotifystuff import (
     get_genre_counts_for_catalog,
     get_spotify_client,
     get_track_catalog,
-    get_user_track_catalog,
-    has_spotify_user_connection,
     get_user_taste_profile,
     search_tracks_for_genres
 )
@@ -52,38 +50,21 @@ def _resolve_preferences(preferences=None):
     }
 
 
-def _load_source_catalog(seed_playlist_id, prefer_user_playlists=True, force_refresh=False):
-    connected_user = has_spotify_user_connection()
-    if prefer_user_playlists and connected_user:
-        try:
-            user_payload = get_user_track_catalog(force_refresh=force_refresh)
-            return (
-                user_payload["catalog"],
-                {
-                    "type": "user_playlists",
-                    "label": f"Picked from your Spotify playlists ({user_payload['playlist_count']} scanned)."
-                },
-                []
-            )
-        except Exception:
-            pass
-
+def _load_source_catalog(seed_playlist_id, force_refresh=False):
     base_catalog = get_track_catalog(seed_playlist_id, force_refresh=force_refresh)
     return (
         base_catalog,
         {
             "type": "seed_playlist",
-            "label": "Picked from the shared starter catalog."
+            "label": "Picked from the shared discovery catalog."
         },
-        ["Using the shared starter catalog instead of your Spotify playlists."]
-        if prefer_user_playlists and connected_user else []
+        []
     )
 
 
-def _build_catalog_with_features(seed_playlist_id, prefer_user_playlists=True, force_refresh=False):
+def _build_catalog_with_features(seed_playlist_id, force_refresh=False):
     base_catalog, source_info, source_warnings = _load_source_catalog(
         seed_playlist_id,
-        prefer_user_playlists=prefer_user_playlists,
         force_refresh=force_refresh
     )
     combined = _enrich_catalog_for_ranking(base_catalog, force_refresh=force_refresh)
@@ -367,7 +348,6 @@ def generate_playlist_bundle(
     resolved_preferences = _resolve_preferences(preferences)
     resolved_action = action if action in {"preview", "create"} else "preview"
     resolved_seed_playlist_id = seed_playlist_id or DEFAULT_SEED_PLAYLIST_ID
-    prefer_user_playlists = True
 
     base_song_params = getSongParams(weather_state)
     song_params = apply_audio_overrides(base_song_params, resolved_preferences)
@@ -375,7 +355,6 @@ def generate_playlist_bundle(
 
     catalog, source_info, source_warnings = _build_catalog_with_features(
         resolved_seed_playlist_id,
-        prefer_user_playlists=prefer_user_playlists,
         force_refresh=force_refresh
     )
 
