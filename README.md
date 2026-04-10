@@ -4,6 +4,8 @@ SkySync is a full-stack app that creates weather-aware Spotify playlists with pr
 
 This project was originally built collaboratively during HackCamp 2025 by Emmy Ha, Gina Lau, Omar Wael Eman, and Xinghao Huang, and has since been further refined and modified by Xinghao Huang.
 
+The website can be visited at: https://sky-sync-pi.vercel.app/
+
 ## Highlights
 
 - Location-aware weather (city search + current geolocation)
