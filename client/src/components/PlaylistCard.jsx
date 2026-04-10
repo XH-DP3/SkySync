@@ -28,7 +28,7 @@ export default function PlaylistCard({ playlist, shareUrl, onCopyShareUrl }) {
         </div>
       )}
 
-      <p className="ready-text">Your personalized playlist is ready.</p>
+      <p className="ready-text">Your playlist is ready.</p>
       {playlist.sourceSummary && <p className="shared-meta">{playlist.sourceSummary}</p>}
 
       {hasSongParams && (

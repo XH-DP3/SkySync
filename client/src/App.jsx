@@ -116,7 +116,6 @@ function buildPreferencePayload(audioOverrides, options) {
     energy: audioOverrides.energy.enabled ? Number(audioOverrides.energy.value) : null,
     genres: options.genres,
     exclude_explicit: options.excludeExplicit,
-    personalize: options.personalize,
     auto_play: options.autoPlay
   };
 }
@@ -168,7 +167,6 @@ function App() {
   const [playlistOptions, setPlaylistOptions] = useState({
     genres: [],
     excludeExplicit: false,
-    personalize: true,
     autoPlay: false
   });
 
@@ -324,13 +322,12 @@ function App() {
     }
 
     setPlaylistOptions((current) => {
-      if (!current.personalize && !current.autoPlay) {
+      if (!current.autoPlay) {
         return current;
       }
 
       return {
         ...current,
-        personalize: false,
         autoPlay: false
       };
     });
@@ -574,7 +571,6 @@ function App() {
       });
       setPlaylistOptions((current) => ({
         ...current,
-        personalize: false,
         autoPlay: false
       }));
       setUiMessage("Spotify disconnected.");
@@ -686,7 +682,7 @@ function App() {
                 ? "Checking Spotify connection..."
                 : spotifyAuth.connected
                   ? `Connected as ${spotifyAuth.user?.display_name ?? "Spotify User"}.`
-                  : "Preview works without Spotify login. Connect Spotify to personalize, auto-play, or create playlists in your own account."}
+                  : "Preview works without Spotify login. Connect Spotify to auto-play or create playlists in your own account."}
             </p>
             {spotifyAuth.connected ? (
               <button
@@ -769,20 +765,6 @@ function App() {
                 }
               />
               Exclude Explicit
-            </label>
-            <label className="toggle-label">
-              <input
-                type="checkbox"
-                checked={playlistOptions.personalize}
-                disabled={!canUseSpotifyAccountFeatures}
-                onChange={(event) =>
-                  setPlaylistOptions((current) => ({
-                    ...current,
-                    personalize: event.target.checked
-                  }))
-                }
-              />
-              Personalize from Spotify
             </label>
             <label className="toggle-label">
               <input
