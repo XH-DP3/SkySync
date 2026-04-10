@@ -5,6 +5,7 @@ import SharedPlaylistCard from "./components/SharedPlaylistCard";
 import TrackPreviewCard from "./components/TrackPreviewCard";
 import WeatherCard from "./components/WeatherCard";
 import "./App.css";
+import { apiFetch } from "./lib/api";
 import { usePlaylist } from "./hooks/usePlaylist";
 import { useWeather } from "./hooks/useWeather";
 
@@ -270,7 +271,7 @@ function App() {
 
     const loadSpotifyStatus = async () => {
       try {
-        const response = await fetch("/api/spotify/status");
+        const response = await apiFetch("/api/spotify/status");
         const data = await response.json();
         if (ignore) {
           return;
@@ -549,7 +550,7 @@ function App() {
     }
 
     try {
-      const response = await fetch("/api/spotify/auth-url");
+      const response = await apiFetch("/api/spotify/auth-url");
       const data = await response.json();
       if (!response.ok || data.status === "error" || !data.authorize_url) {
         throw new Error(data?.message ?? "Unable to start Spotify login.");
@@ -562,7 +563,7 @@ function App() {
 
   const handleDisconnectSpotify = async () => {
     try {
-      await fetch("/api/spotify/logout", {
+      await apiFetch("/api/spotify/logout", {
         method: "POST"
       });
     } finally {

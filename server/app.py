@@ -2,7 +2,6 @@ import logging
 import os
 
 from flask import Flask, jsonify, redirect, request
-from flask_cors import CORS
 
 from playlist import generate_playlist_bundle, make_new_playlist
 from spotifystuff import (
@@ -14,13 +13,39 @@ from spotifystuff import (
 from weather_new import get_clean_weather, get_weather_state, search_locations
 
 app = Flask(__name__)
-CORS(app)
 app.logger.setLevel(logging.INFO)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_SECURE"] = True
 
 
 def _resolve_client_redirect_url():
     return os.getenv("CLIENT_APP_URL", "http://127.0.0.1:3000")
+
+
+def _is_allowed_origin(origin):
+    if not origin:
+        return False
+
+    configured_origin = _resolve_client_redirect_url().rstrip("/")
+    normalized_origin = origin.rstrip("/")
+    return (
+        normalized_origin == configured_origin or
+        normalized_origin.endswith(".vercel.app")
+    )
+
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin", "")
+    if _is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        response.headers["Vary"] = "Origin"
+
+    return response
 
 
 @app.route("/api/health", methods=["GET"])

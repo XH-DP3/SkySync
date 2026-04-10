@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { apiFetch } from "../lib/api";
 
 const PLAYLIST_STORAGE_KEY = "skysync.playlistState";
 
@@ -108,7 +109,7 @@ export function usePlaylist() {
         force_refresh: forceRefresh
       };
 
-      const response = await fetch("/api/playlists/generate", {
+      const response = await apiFetch("/api/playlists/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"

@@ -3,6 +3,7 @@ import {
   MAIN_BACKGROUND,
   getWeatherBackground
 } from "../constants/weatherBackgrounds";
+import { apiFetch } from "../lib/api";
 
 function getErrorMessage(error, fallbackMessage) {
   if (error instanceof Error && error.message) {
@@ -46,7 +47,7 @@ export function useWeather() {
     setLocationError("");
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `/api/locations/search?q=${encodeURIComponent(trimmed)}`
       );
       const data = await response.json();
@@ -72,7 +73,7 @@ export function useWeather() {
     setError("");
 
     try {
-      const response = await fetch("/api/weather", {
+      const response = await apiFetch("/api/weather", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
